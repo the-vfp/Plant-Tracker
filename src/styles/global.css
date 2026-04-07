@@ -391,3 +391,65 @@ input {
 .danger-zone {
   border: 1px solid var(--danger-light);
 }
+
+/* === PHOTO UPLOAD === */
+.photo-upload {
+  margin-bottom: 16px;
+}
+.photo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.photo-btn.uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.timeline-thumbnail {
+  width: 100%;
+  max-width: 200px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: opacity 0.15s;
+}
+.timeline-thumbnail:active {
+  opacity: 0.8;
+}
+
+/* === LIGHTBOX === */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.lightbox-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: white;
+  font-size: 2rem;
+  padding: 8px 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  z-index: 101;
+}
+.lightbox-close:active {
+  background: rgba(255, 255, 255, 0.3);
+}

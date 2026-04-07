@@ -39,3 +39,10 @@ db.version(2).stores({
     }
   });
 });
+
+db.version(3).stores({
+  plants: '++id, name, icon, type, createdAt',
+  waterings: '++id, plantId, date',
+  notes: '++id, plantId, text, date',
+  photos: '++id, plantId, date',
+});

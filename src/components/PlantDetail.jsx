@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
+import { processPhoto } from '../utils/imageCompression.js';
+import Lightbox from './Lightbox.jsx';
 
 export default function PlantDetail({ plantId, onEdit, onBack }) {
   const [noteText, setNoteText] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
 
   const plant = useLiveQuery(() => db.plants.get(plantId), [plantId]);
   const waterings = useLiveQuery(
@@ -14,13 +18,53 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
     () => db.notes.where('plantId').equals(plantId).toArray(),
     [plantId]
   );
+  const photos = useLiveQuery(
+    () => db.photos.where('plantId').equals(plantId).toArray(),
+    [plantId]
+  );
 
-  if (!plant || !waterings || !notes) return <div className="loading">Loading...</div>;
+  // Build timeline with object URLs for photo thumbnails
+  const { timeline, objectUrls } = useMemo(() => {
+    if (!waterings || !notes || !photos) return { timeline: [], objectUrls: [] };
 
-  const timeline = [
-    ...waterings.map((w) => ({ type: 'water', date: w.date, id: `w-${w.id}` })),
-    ...notes.map((n) => ({ type: 'note', date: n.date, text: n.text, id: `n-${n.id}`, noteId: n.id })),
-  ].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const urls = [];
+    const entries = [
+      ...waterings.map((w) => ({ type: 'water', date: w.date, id: `w-${w.id}` })),
+      ...notes.map((n) => ({ type: 'note', date: n.date, text: n.text, id: `n-${n.id}`, noteId: n.id })),
+      ...photos.map((p) => {
+        const thumbnailUrl = URL.createObjectURL(p.thumbnail);
+        urls.push(thumbnailUrl);
+        return {
+          type: 'photo',
+          date: p.date,
+          id: `p-${p.id}`,
+          photoId: p.id,
+          thumbnailUrl,
+          photoBlob: p.blob,
+        };
+      }),
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    return { timeline: entries, objectUrls: urls };
+  }, [waterings, notes, photos]);
+
+  // Revoke thumbnail object URLs on cleanup
+  useEffect(() => {
+    return () => {
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [objectUrls]);
+
+  // Revoke lightbox URL when closing
+  const openLightbox = (photoBlob) => {
+    setLightboxUrl(URL.createObjectURL(photoBlob));
+  };
+  const closeLightbox = () => {
+    if (lightboxUrl) URL.revokeObjectURL(lightboxUrl);
+    setLightboxUrl(null);
+  };
+
+  if (!plant || !waterings || !notes || !photos) return <div className="loading">Loading...</div>;
 
   const waterPlant = async () => {
     await db.waterings.add({ plantId, date: new Date().toISOString() });
@@ -37,10 +81,37 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
     await db.notes.delete(noteId);
   };
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { blob, thumbnail, mimeType } = await processPhoto(file);
+      await db.photos.add({
+        plantId,
+        date: new Date().toISOString(),
+        blob,
+        thumbnail,
+        mimeType,
+      });
+    } catch (err) {
+      alert('Failed to process photo.');
+      console.error(err);
+    }
+    setUploading(false);
+    e.target.value = '';
+  };
+
+  const deletePhoto = async (photoId) => {
+    if (!confirm('Delete this photo?')) return;
+    await db.photos.delete(photoId);
+  };
+
   const deletePlant = async () => {
     if (!confirm(`Delete "${plant.name}"? This removes all its data.`)) return;
     await db.waterings.where('plantId').equals(plantId).delete();
     await db.notes.where('plantId').equals(plantId).delete();
+    await db.photos.where('plantId').equals(plantId).delete();
     await db.plants.delete(plantId);
     onBack();
   };
@@ -67,6 +138,19 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
         💧 Water Now
       </button>
 
+      <div className="photo-upload">
+        <label className={`btn-secondary photo-btn ${uploading ? 'uploading' : ''}`}>
+          {uploading ? '⏳ Processing...' : '📷 Add Photo'}
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoUpload}
+            style={{ display: 'none' }}
+          />
+        </label>
+      </div>
+
       <div className="note-input">
         <input
           type="text"
@@ -86,19 +170,28 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
           timeline.map((entry) => (
             <div key={entry.id} className={`timeline-entry ${entry.type}`}>
               <span className="timeline-icon">
-                {entry.type === 'water' ? '💧' : '📝'}
+                {entry.type === 'water' ? '💧' : entry.type === 'note' ? '📝' : '📷'}
               </span>
               <div className="timeline-content">
-                <span className="timeline-text">
-                  {entry.type === 'water' ? 'Watered' : entry.text}
-                </span>
+                {entry.type === 'photo' ? (
+                  <img
+                    src={entry.thumbnailUrl}
+                    alt="Plant photo"
+                    className="timeline-thumbnail"
+                    onClick={() => openLightbox(entry.photoBlob)}
+                  />
+                ) : (
+                  <span className="timeline-text">
+                    {entry.type === 'water' ? 'Watered' : entry.text}
+                  </span>
+                )}
                 <span className="timeline-date">{formatDate(entry.date)}</span>
               </div>
-              {entry.type === 'note' && (
+              {(entry.type === 'note' || entry.type === 'photo') && (
                 <button
                   className="delete-note-btn"
-                  onClick={() => deleteNote(entry.noteId)}
-                  aria-label="Delete note"
+                  onClick={() => entry.type === 'note' ? deleteNote(entry.noteId) : deletePhoto(entry.photoId)}
+                  aria-label={`Delete ${entry.type}`}
                 >
                   &times;
                 </button>
@@ -107,6 +200,8 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
           ))
         )}
       </div>
+
+      {lightboxUrl && <Lightbox src={lightboxUrl} onClose={closeLightbox} />}
     </div>
   );
 }
