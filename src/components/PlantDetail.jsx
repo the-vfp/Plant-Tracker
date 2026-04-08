@@ -29,7 +29,7 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
 
     const urls = [];
     const entries = [
-      ...waterings.map((w) => ({ type: 'water', date: w.date, id: `w-${w.id}` })),
+      ...waterings.map((w) => ({ type: 'water', date: w.date, id: `w-${w.id}`, wateringId: w.id })),
       ...notes.map((n) => ({ type: 'note', date: n.date, text: n.text, id: `n-${n.id}`, noteId: n.id })),
       ...photos.map((p) => {
         const thumbnailUrl = URL.createObjectURL(p.thumbnail);
@@ -75,6 +75,10 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
     if (!text) return;
     await db.notes.add({ plantId, text, date: new Date().toISOString() });
     setNoteText('');
+  };
+
+  const deleteWatering = async (wateringId) => {
+    await db.waterings.delete(wateringId);
   };
 
   const deleteNote = async (noteId) => {
@@ -187,15 +191,17 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
                 )}
                 <span className="timeline-date">{formatDate(entry.date)}</span>
               </div>
-              {(entry.type === 'note' || entry.type === 'photo') && (
-                <button
-                  className="delete-note-btn"
-                  onClick={() => entry.type === 'note' ? deleteNote(entry.noteId) : deletePhoto(entry.photoId)}
-                  aria-label={`Delete ${entry.type}`}
-                >
-                  &times;
-                </button>
-              )}
+              <button
+                className="delete-note-btn"
+                onClick={() =>
+                  entry.type === 'water' ? deleteWatering(entry.wateringId) :
+                  entry.type === 'note' ? deleteNote(entry.noteId) :
+                  deletePhoto(entry.photoId)
+                }
+                aria-label={`Delete ${entry.type}`}
+              >
+                &times;
+              </button>
             </div>
           ))
         )}
