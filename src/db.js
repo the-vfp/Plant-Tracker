@@ -46,3 +46,16 @@ db.version(3).stores({
   notes: '++id, plantId, text, date',
   photos: '++id, plantId, date',
 });
+
+db.version(4).stores({
+  plants: '++id, name, icon, type, createdAt',
+  waterings: '++id, plantId, date',
+  notes: '++id, plantId, text, date',
+  photos: '++id, plantId, date',
+}).upgrade(tx => {
+  return tx.table('plants').toCollection().modify(plant => {
+    if (plant.wateringInterval === undefined) {
+      plant.wateringInterval = 7;
+    }
+  });
+});

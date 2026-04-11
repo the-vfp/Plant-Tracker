@@ -42,6 +42,7 @@ export default function Home({ onSelect, onAdd }) {
                 key={plant.id}
                 plant={plant}
                 daysSinceWatered={days}
+                wateringInterval={plant.wateringInterval || 7}
                 onWater={() => waterPlant(plant.id)}
                 onSelect={() => onSelect(plant.id)}
               />

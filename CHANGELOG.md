@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-04-11 — Watering Features
+- Watering history bar chart on plant detail view (collapsible, pure SVG)
+  - Toggle between 14-day, 30-day, 90-day, and 360-day ranges
+  - Shows watering frequency per time bucket with sage green bars
+- Per-plant watering cadence: set how often each plant needs water (e.g. every 7 days, every 21 days)
+  - New "Water Every (days)" field on add/edit plant form
+  - Home screen urgency borders now use each plant's own interval
+  - Orange at 75% of interval, red when due or overdue
+
 ## 2026-04-07 — Photo Upload
 - Add photo capture and upload on plant detail view (camera or file picker)
 - Photos compressed to JPEG and stored in IndexedDB with thumbnails

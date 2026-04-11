@@ -1,4 +1,4 @@
-export default function PlantCard({ plant, daysSinceWatered, onWater, onSelect }) {
+export default function PlantCard({ plant, daysSinceWatered, wateringInterval = 7, onWater, onSelect }) {
   const daysText =
     daysSinceWatered === null
       ? 'Never watered'
@@ -9,9 +9,9 @@ export default function PlantCard({ plant, daysSinceWatered, onWater, onSelect }
           : `${daysSinceWatered} days ago`;
 
   const urgencyClass =
-    daysSinceWatered === null || daysSinceWatered >= 7
+    daysSinceWatered === null || daysSinceWatered >= wateringInterval
       ? 'urgent'
-      : daysSinceWatered >= 4
+      : daysSinceWatered >= Math.floor(wateringInterval * 0.75)
         ? 'due-soon'
         : 'ok';
 

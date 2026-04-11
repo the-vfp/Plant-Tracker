@@ -11,6 +11,7 @@ export default function AddPlant({ editId, onDone }) {
   const [name, setName] = useState('');
   const [type, setType] = useState('');
   const [icon, setIcon] = useState('🌱');
+  const [wateringInterval, setWateringInterval] = useState(7);
 
   useEffect(() => {
     if (editId) {
@@ -19,6 +20,7 @@ export default function AddPlant({ editId, onDone }) {
           setName(plant.name);
           setType(plant.type || '');
           setIcon(plant.icon || '🌱');
+          setWateringInterval(plant.wateringInterval || 7);
         }
       });
     }
@@ -29,9 +31,9 @@ export default function AddPlant({ editId, onDone }) {
     if (!trimmed) return;
 
     if (editId) {
-      await db.plants.update(editId, { name: trimmed, type: type.trim(), icon });
+      await db.plants.update(editId, { name: trimmed, type: type.trim(), icon, wateringInterval });
     } else {
-      await db.plants.add({ name: trimmed, type: type.trim(), icon, createdAt: new Date().toISOString() });
+      await db.plants.add({ name: trimmed, type: type.trim(), icon, wateringInterval, createdAt: new Date().toISOString() });
     }
     onDone();
   };
@@ -59,6 +61,19 @@ export default function AddPlant({ editId, onDone }) {
           placeholder="e.g. Golden Pothos, Snake Plant..."
           value={type}
           onChange={(e) => setType(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && save()}
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="watering-interval">Water Every (days)</label>
+        <input
+          id="watering-interval"
+          type="number"
+          min="1"
+          max="365"
+          value={wateringInterval}
+          onChange={(e) => setWateringInterval(Math.max(1, parseInt(e.target.value) || 1))}
           onKeyDown={(e) => e.key === 'Enter' && save()}
         />
       </div>

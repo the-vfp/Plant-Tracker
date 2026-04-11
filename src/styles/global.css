@@ -297,7 +297,8 @@ input {
   color: var(--text-muted);
   margin-bottom: 8px;
 }
-.form-group input[type="text"] {
+.form-group input[type="text"],
+.form-group input[type="number"] {
   width: 100%;
   padding: 14px 16px;
   background: white;
@@ -390,6 +391,74 @@ input {
 }
 .danger-zone {
   border: 1px solid var(--danger-light);
+}
+
+/* === WATERING CHART === */
+.watering-chart {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px var(--shadow);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.chart-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  background: white;
+  transition: background 0.15s;
+}
+.chart-toggle:active { background: var(--warm-white); }
+
+.chart-chevron {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+.chart-chevron.open { transform: rotate(180deg); }
+
+.chart-body {
+  padding: 0 16px 16px;
+}
+
+.chart-range-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.chart-range-btn {
+  flex: 1;
+  padding: 7px 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 8px;
+  background: var(--warm-white);
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+.chart-range-btn.active {
+  background: var(--sage);
+  color: white;
+}
+.chart-range-btn:active { opacity: 0.8; }
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 24px 0;
 }
 
 /* === PHOTO UPLOAD === */

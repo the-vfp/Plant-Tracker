@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
 import { processPhoto } from '../utils/imageCompression.js';
 import Lightbox from './Lightbox.jsx';
+import WateringChart from './WateringChart.jsx';
 
 export default function PlantDetail({ plantId, onEdit, onBack }) {
   const [noteText, setNoteText] = useState('');
@@ -154,6 +155,8 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
           />
         </label>
       </div>
+
+      <WateringChart waterings={waterings} />
 
       <div className="note-input">
         <input
