@@ -8,6 +8,7 @@
   - New "Water Every (days)" field on add/edit plant form
   - Home screen urgency borders now use each plant's own interval
   - Orange at 75% of interval, red when due or overdue
+- Fix: watering interval input can now be cleared and retyped freely
 
 ## 2026-04-07 — Photo Upload
 - Add photo capture and upload on plant detail view (camera or file picker)
