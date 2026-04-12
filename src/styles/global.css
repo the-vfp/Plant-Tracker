@@ -227,10 +227,51 @@ input {
 .water-btn-large:active { background: var(--sage-light); }
 
 /* === NOTE INPUT === */
+.note-input-section {
+  margin-bottom: 24px;
+}
+.note-emoji-picker {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.emoji-btn-sm {
+  width: 36px;
+  height: 36px;
+  font-size: 1.15rem;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+.emoji-btn-sm.selected {
+  box-shadow: 0 0 0 3px var(--sage);
+  transform: scale(1.1);
+}
+.emoji-btn-sm:active { transform: scale(0.9); }
+.emoji-btn-sm.custom-trigger {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+.custom-emoji-input {
+  width: 42px;
+  height: 36px;
+  font-size: 1.15rem;
+  text-align: center;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 0 0 3px var(--sage);
+  padding: 0;
+}
 .note-input {
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
 }
 .note-input input {
   flex: 1;
@@ -277,6 +318,19 @@ input {
   color: var(--text-muted);
   margin-top: 2px;
 }
+.timeline-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  align-items: center;
+}
+.edit-note-btn {
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.edit-note-btn:hover { background: var(--sage-pale); }
 .delete-note-btn {
   color: var(--text-muted);
   font-size: 1.2rem;

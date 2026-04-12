@@ -5,8 +5,20 @@ import { processPhoto } from '../utils/imageCompression.js';
 import Lightbox from './Lightbox.jsx';
 import WateringChart from './WateringChart.jsx';
 
+const NOTE_EMOJIS = [
+  { emoji: '🧪', label: 'Fertilizer' },
+  { emoji: '🪴', label: 'Repotting' },
+  { emoji: '✂️', label: 'Pruning' },
+  { emoji: '🔄', label: 'Rotation' },
+  { emoji: '📦', label: 'Moving' },
+];
+
 export default function PlantDetail({ plantId, onEdit, onBack }) {
   const [noteText, setNoteText] = useState('');
+  const [noteEmoji, setNoteEmoji] = useState(null);
+  const [customEmojiMode, setCustomEmojiMode] = useState(false);
+  const [customEmojiText, setCustomEmojiText] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState(null);
 
@@ -31,7 +43,7 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
     const urls = [];
     const entries = [
       ...waterings.map((w) => ({ type: 'water', date: w.date, id: `w-${w.id}`, wateringId: w.id })),
-      ...notes.map((n) => ({ type: 'note', date: n.date, text: n.text, id: `n-${n.id}`, noteId: n.id })),
+      ...notes.map((n) => ({ type: 'note', date: n.date, text: n.text, emoji: n.emoji || '📝', id: `n-${n.id}`, noteId: n.id })),
       ...photos.map((p) => {
         const thumbnailUrl = URL.createObjectURL(p.thumbnail);
         urls.push(thumbnailUrl);
@@ -71,11 +83,50 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
     await db.waterings.add({ plantId, date: new Date().toISOString() });
   };
 
+  const getSelectedEmoji = () => {
+    if (customEmojiMode && customEmojiText.trim()) return customEmojiText.trim();
+    return noteEmoji || '📝';
+  };
+
+  const resetNoteForm = () => {
+    setNoteText('');
+    setNoteEmoji(null);
+    setCustomEmojiMode(false);
+    setCustomEmojiText('');
+    setEditingNoteId(null);
+  };
+
   const addNote = async () => {
     const text = noteText.trim();
     if (!text) return;
-    await db.notes.add({ plantId, text, date: new Date().toISOString() });
-    setNoteText('');
+    const emoji = getSelectedEmoji();
+    if (editingNoteId) {
+      await db.notes.update(editingNoteId, { text, emoji });
+      resetNoteForm();
+    } else {
+      await db.notes.add({ plantId, text, emoji, date: new Date().toISOString() });
+      resetNoteForm();
+    }
+  };
+
+  const startEditNote = (entry) => {
+    setEditingNoteId(entry.noteId);
+    setNoteText(entry.text);
+    const emoji = entry.emoji || '📝';
+    const presetMatch = NOTE_EMOJIS.find(e => e.emoji === emoji);
+    if (presetMatch) {
+      setNoteEmoji(emoji);
+      setCustomEmojiMode(false);
+      setCustomEmojiText('');
+    } else if (emoji !== '📝') {
+      setNoteEmoji(null);
+      setCustomEmojiMode(true);
+      setCustomEmojiText(emoji);
+    } else {
+      setNoteEmoji(null);
+      setCustomEmojiMode(false);
+      setCustomEmojiText('');
+    }
   };
 
   const deleteWatering = async (wateringId) => {
@@ -158,15 +209,66 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
 
       <WateringChart waterings={waterings} />
 
-      <div className="note-input">
-        <input
-          type="text"
-          placeholder="Add a note... (repotted, fertilized, etc.)"
-          value={noteText}
-          onChange={(e) => setNoteText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addNote()}
-        />
-        <button className="btn-primary" onClick={addNote}>Add</button>
+      <div className="note-input-section">
+        <div className="note-emoji-picker">
+          {NOTE_EMOJIS.map(({ emoji, label }) => (
+            <button
+              key={emoji}
+              className={`emoji-btn-sm ${noteEmoji === emoji && !customEmojiMode ? 'selected' : ''}`}
+              onClick={() => {
+                if (noteEmoji === emoji && !customEmojiMode) {
+                  setNoteEmoji(null);
+                } else {
+                  setNoteEmoji(emoji);
+                  setCustomEmojiMode(false);
+                  setCustomEmojiText('');
+                }
+              }}
+              title={label}
+            >
+              {emoji}
+            </button>
+          ))}
+          {customEmojiMode ? (
+            <input
+              type="text"
+              className="custom-emoji-input"
+              value={customEmojiText}
+              onChange={(e) => {
+                setCustomEmojiText(e.target.value);
+                setNoteEmoji(null);
+              }}
+              placeholder="😀"
+              autoFocus
+            />
+          ) : (
+            <button
+              className="emoji-btn-sm custom-trigger"
+              onClick={() => {
+                setCustomEmojiMode(true);
+                setNoteEmoji(null);
+              }}
+              title="Custom emoji"
+            >
+              ⌨️
+            </button>
+          )}
+        </div>
+        <div className="note-input">
+          <input
+            type="text"
+            placeholder="Add a note... (repotted, fertilized, etc.)"
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addNote()}
+          />
+          <button className="btn-primary" onClick={addNote}>
+            {editingNoteId ? 'Save' : 'Add'}
+          </button>
+          {editingNoteId && (
+            <button className="btn-secondary" onClick={resetNoteForm}>Cancel</button>
+          )}
+        </div>
       </div>
 
       <div className="timeline">
@@ -177,7 +279,7 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
           timeline.map((entry) => (
             <div key={entry.id} className={`timeline-entry ${entry.type}`}>
               <span className="timeline-icon">
-                {entry.type === 'water' ? '💧' : entry.type === 'note' ? '📝' : '📷'}
+                {entry.type === 'water' ? '💧' : entry.type === 'note' ? (entry.emoji || '📝') : '📷'}
               </span>
               <div className="timeline-content">
                 {entry.type === 'photo' ? (
@@ -194,17 +296,28 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
                 )}
                 <span className="timeline-date">{formatDate(entry.date)}</span>
               </div>
-              <button
-                className="delete-note-btn"
-                onClick={() =>
-                  entry.type === 'water' ? deleteWatering(entry.wateringId) :
-                  entry.type === 'note' ? deleteNote(entry.noteId) :
-                  deletePhoto(entry.photoId)
-                }
-                aria-label={`Delete ${entry.type}`}
-              >
-                &times;
-              </button>
+              <div className="timeline-actions">
+                {entry.type === 'note' && (
+                  <button
+                    className="edit-note-btn"
+                    onClick={() => startEditNote(entry)}
+                    aria-label="Edit note"
+                  >
+                    ✏️
+                  </button>
+                )}
+                <button
+                  className="delete-note-btn"
+                  onClick={() =>
+                    entry.type === 'water' ? deleteWatering(entry.wateringId) :
+                    entry.type === 'note' ? deleteNote(entry.noteId) :
+                    deletePhoto(entry.photoId)
+                  }
+                  aria-label={`Delete ${entry.type}`}
+                >
+                  &times;
+                </button>
+              </div>
             </div>
           ))
         )}

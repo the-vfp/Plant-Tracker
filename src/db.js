@@ -59,3 +59,16 @@ db.version(4).stores({
     }
   });
 });
+
+db.version(5).stores({
+  plants: '++id, name, icon, type, createdAt',
+  waterings: '++id, plantId, date',
+  notes: '++id, plantId, text, date',
+  photos: '++id, plantId, date',
+}).upgrade(tx => {
+  return tx.table('notes').toCollection().modify(note => {
+    if (!note.emoji) {
+      note.emoji = '📝';
+    }
+  });
+});
