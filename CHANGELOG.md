@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-04-11 — Note Emoji & Editing
+- Emoji picker for care notes: quick-select presets for common activities (🧪 fertilizer, 🪴 repotting, ✂️ pruning, 🔄 rotation, 📦 moving)
+- Custom emoji input for any other emoji via keyboard
+- Selected emoji displays in the care log timeline instead of generic 📝
+- Edit existing notes: tap ✏️ to update text and emoji, preserving the original timestamp
+- Deployed to Vercel at plant-tracker-blue.vercel.app
+
 ## 2026-04-11 — Watering Features
 - Watering history bar chart on plant detail view (collapsible, pure SVG)
   - Toggle between 14-day, 30-day, 90-day, and 360-day ranges
