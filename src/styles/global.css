@@ -508,6 +508,13 @@ input {
   display: block;
 }
 
+.chart-avg {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin: 4px 0 0;
+}
+
 .chart-empty {
   text-align: center;
   color: var(--text-muted);

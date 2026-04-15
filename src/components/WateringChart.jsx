@@ -1,47 +1,38 @@
 import { useState, useMemo } from 'react';
 
 const RANGES = [
-  { label: '14d', days: 14, bucketSize: 1 },
-  { label: '30d', days: 30, bucketSize: 1 },
-  { label: '90d', days: 90, bucketSize: 2 },
-  { label: '360d', days: 360, bucketSize: 3 },
+  { label: 'Last 10', count: 10 },
+  { label: 'Last 20', count: 20 },
+  { label: 'All', count: Infinity },
 ];
 
 const SVG_WIDTH = 400;
 const SVG_HEIGHT = 140;
-const PADDING = { top: 20, right: 16, bottom: 28, left: 28 };
+const PADDING = { top: 20, right: 16, bottom: 28, left: 34 };
 
-function bucketWaterings(waterings, days, bucketSize) {
-  const now = new Date();
-  const start = new Date(now);
-  start.setDate(start.getDate() - days);
-  start.setHours(0, 0, 0, 0);
+function computeIntervals(waterings, count) {
+  if (!waterings || waterings.length < 2) return [];
 
-  const bucketCount = Math.ceil(days / bucketSize);
-  const buckets = Array.from({ length: bucketCount }, (_, i) => {
-    const bucketStart = new Date(start);
-    bucketStart.setDate(bucketStart.getDate() + i * bucketSize);
-    const bucketEnd = new Date(bucketStart);
-    bucketEnd.setDate(bucketEnd.getDate() + bucketSize);
-    return { start: bucketStart, end: bucketEnd, count: 0 };
-  });
+  const sorted = [...waterings]
+    .map((w) => new Date(w.date))
+    .sort((a, b) => a - b);
 
-  for (const w of waterings) {
-    const d = new Date(w.date);
-    if (d < start) continue;
-    const dayOffset = Math.floor((d - start) / (1000 * 60 * 60 * 24));
-    const bucketIndex = Math.min(Math.floor(dayOffset / bucketSize), bucketCount - 1);
-    if (bucketIndex >= 0) buckets[bucketIndex].count++;
+  const intervals = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const days = (sorted[i] - sorted[i - 1]) / (1000 * 60 * 60 * 24);
+    intervals.push({ date: sorted[i], days: Math.round(days * 10) / 10 });
   }
 
-  return buckets;
+  if (count < Infinity) {
+    return intervals.slice(-count);
+  }
+  return intervals;
 }
 
-function formatLabel(date, days) {
+function formatLabel(date) {
   const m = date.toLocaleDateString('en-CA', { month: 'short' });
   const d = date.getDate();
-  if (days <= 30) return `${m} ${d}`;
-  return m;
+  return `${m} ${d}`;
 }
 
 export default function WateringChart({ waterings }) {
@@ -49,38 +40,51 @@ export default function WateringChart({ waterings }) {
   const [rangeIndex, setRangeIndex] = useState(0);
 
   const range = RANGES[rangeIndex];
-  const buckets = useMemo(
-    () => bucketWaterings(waterings || [], range.days, range.bucketSize),
-    [waterings, range.days, range.bucketSize]
+  const intervals = useMemo(
+    () => computeIntervals(waterings, range.count),
+    [waterings, range.count]
   );
 
-  const maxCount = Math.max(1, ...buckets.map((b) => b.count));
-  const yTicks = Array.from({ length: maxCount + 1 }, (_, i) => i);
+  const maxDays = Math.max(1, ...intervals.map((d) => d.days));
+  const avgDays = intervals.length > 0
+    ? Math.round((intervals.reduce((s, d) => s + d.days, 0) / intervals.length) * 10) / 10
+    : 0;
 
   const chartW = SVG_WIDTH - PADDING.left - PADDING.right;
   const chartH = SVG_HEIGHT - PADDING.top - PADDING.bottom;
 
-  const barGap = 1;
-  const barWidth = Math.max(1, (chartW - barGap * (buckets.length - 1)) / buckets.length);
+  const barGap = Math.max(1, Math.min(3, chartW / intervals.length * 0.15));
+  const barWidth = intervals.length > 0
+    ? Math.max(2, (chartW - barGap * (intervals.length - 1)) / intervals.length)
+    : 0;
 
-  const bars = buckets.map((b, i) => ({
+  const bars = intervals.map((d, i) => ({
     x: PADDING.left + i * (barWidth + barGap),
-    height: b.count > 0 ? Math.max(2, (b.count / maxCount) * chartH) : 0,
-    count: b.count,
-    date: b.start,
+    height: Math.max(2, (d.days / maxDays) * chartH),
+    days: d.days,
+    date: d.date,
   }));
 
-  // Pick ~5-7 evenly spaced x-axis labels
-  const labelInterval = Math.max(1, Math.floor(buckets.length / 6));
+  // Y-axis ticks — pick sensible round numbers
+  const yTickCount = Math.min(5, Math.ceil(maxDays));
+  const yStep = maxDays <= 5 ? 1 : Math.ceil(maxDays / yTickCount);
+  const yTicks = [];
+  for (let v = 0; v <= maxDays; v += yStep) yTicks.push(v);
+  if (yTicks[yTicks.length - 1] < maxDays) yTicks.push(Math.ceil(maxDays));
+
+  // X-axis labels — ~5-7 evenly spaced
+  const labelInterval = Math.max(1, Math.floor(intervals.length / 6));
   const xLabels = bars.filter((_, i) => i % labelInterval === 0 || i === bars.length - 1);
 
-  const hasData = waterings && waterings.length > 0;
-  const hasDataInRange = buckets.some((b) => b.count > 0);
+  const hasData = waterings && waterings.length >= 2;
+
+  // Average line y position
+  const avgY = PADDING.top + chartH - (avgDays / maxDays) * chartH;
 
   return (
     <div className="watering-chart">
       <button className="chart-toggle" onClick={() => setExpanded(!expanded)}>
-        <span>Watering History</span>
+        <span>Watering Cadence</span>
         <span className={`chart-chevron ${expanded ? 'open' : ''}`}>&#9662;</span>
       </button>
 
@@ -98,39 +102,54 @@ export default function WateringChart({ waterings }) {
             ))}
           </div>
 
-          {!hasData || !hasDataInRange ? (
-            <p className="chart-empty">No waterings in this range.</p>
+          {!hasData ? (
+            <p className="chart-empty">Need at least 2 waterings to show cadence.</p>
+          ) : intervals.length === 0 ? (
+            <p className="chart-empty">No intervals in this range.</p>
           ) : (
-            <svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`} className="chart-svg">
-              {/* Y-axis grid lines */}
-              {yTicks.map((tick) => {
-                const y = PADDING.top + chartH - (tick / maxCount) * chartH;
-                return (
-                  <g key={tick}>
-                    <line
-                      x1={PADDING.left}
-                      y1={y}
-                      x2={SVG_WIDTH - PADDING.right}
-                      y2={y}
-                      stroke="var(--sage-pale)"
-                      strokeWidth="0.5"
-                    />
-                    <text
-                      x={PADDING.left - 6}
-                      y={y + 3.5}
-                      textAnchor="end"
-                      fontSize="9"
-                      fill="var(--text-muted)"
-                    >
-                      {tick}
-                    </text>
-                  </g>
-                );
-              })}
+            <>
+              <p className="chart-avg">avg {avgDays}d between waterings</p>
+              <svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`} className="chart-svg">
+                {/* Y-axis grid lines */}
+                {yTicks.map((tick) => {
+                  const y = PADDING.top + chartH - (tick / maxDays) * chartH;
+                  return (
+                    <g key={tick}>
+                      <line
+                        x1={PADDING.left}
+                        y1={y}
+                        x2={SVG_WIDTH - PADDING.right}
+                        y2={y}
+                        stroke="var(--sage-pale)"
+                        strokeWidth="0.5"
+                      />
+                      <text
+                        x={PADDING.left - 6}
+                        y={y + 3.5}
+                        textAnchor="end"
+                        fontSize="9"
+                        fill="var(--text-muted)"
+                      >
+                        {tick}d
+                      </text>
+                    </g>
+                  );
+                })}
 
-              {/* Bars */}
-              {bars.map((b, i) => (
-                b.count > 0 && (
+                {/* Average line */}
+                <line
+                  x1={PADDING.left}
+                  y1={avgY}
+                  x2={SVG_WIDTH - PADDING.right}
+                  y2={avgY}
+                  stroke="var(--sage)"
+                  strokeWidth="1"
+                  strokeDasharray="4 3"
+                  opacity="0.6"
+                />
+
+                {/* Bars */}
+                {bars.map((b, i) => (
                   <rect
                     key={i}
                     x={b.x}
@@ -141,23 +160,23 @@ export default function WateringChart({ waterings }) {
                     fill="var(--sage)"
                     opacity={0.85}
                   />
-                )
-              ))}
+                ))}
 
-              {/* X-axis labels */}
-              {xLabels.map((b, i) => (
-                <text
-                  key={i}
-                  x={b.x + barWidth / 2}
-                  y={SVG_HEIGHT - 4}
-                  textAnchor="middle"
-                  fontSize="8"
-                  fill="var(--text-muted)"
-                >
-                  {formatLabel(b.date, range.days)}
-                </text>
-              ))}
-            </svg>
+                {/* X-axis labels */}
+                {xLabels.map((b, i) => (
+                  <text
+                    key={i}
+                    x={b.x + barWidth / 2}
+                    y={SVG_HEIGHT - 4}
+                    textAnchor="middle"
+                    fontSize="8"
+                    fill="var(--text-muted)"
+                  >
+                    {formatLabel(b.date)}
+                  </text>
+                ))}
+              </svg>
+            </>
           )}
         </div>
       )}
