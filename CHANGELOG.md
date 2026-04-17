@@ -11,6 +11,8 @@
   - Care log: reverse-chronological feed merging waterings, notes, photos, repots, prunes, fertilizing, rotations, moves — infinite scroll (20 at a time)
   - All plants: existing card grid with sort pills (Date acquired / Name / Type)
 - Fully italic serif headline; minimalist cream + moss + terracotta palette
+
+## 2026-04-11 — Note Emoji & Editing
 - Emoji picker for care notes: quick-select presets for common activities (🧪 fertilizer, 🪴 repotting, ✂️ pruning, 🔄 rotation, 📦 moving)
 - Custom emoji input for any other emoji via keyboard
 - Selected emoji displays in the care log timeline instead of generic 📝
