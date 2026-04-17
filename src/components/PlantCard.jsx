@@ -1,4 +1,4 @@
-export default function PlantCard({ plant, daysSinceWatered, wateringInterval = 7, onWater, onSelect }) {
+export default function PlantCard({ plant, daysSinceWatered, wateringInterval = 7, onWater, onSelect, showType = false }) {
   const daysText =
     daysSinceWatered === null
       ? 'Never watered'
@@ -20,6 +20,7 @@ export default function PlantCard({ plant, daysSinceWatered, wateringInterval = 
       <div className="plant-icon">{plant.icon || '🌱'}</div>
       <div className="plant-info">
         <h3>{plant.name}</h3>
+        {showType && plant.type && <span className="plant-type">{plant.type}</span>}
         <span className="days-label">{daysText}</span>
       </div>
       <button

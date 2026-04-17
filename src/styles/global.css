@@ -92,6 +92,9 @@ input {
   flex: 1;
   padding: 16px 20px 100px;
 }
+.app-main-home {
+  padding: 0 20px 100px;
+}
 
 /* === LOADING === */
 .loading {
@@ -106,14 +109,34 @@ input {
 /* === LEDGER === */
 .ledger {
   position: relative;
-  margin: -16px -20px -100px;
+  margin: 0 -20px -100px;
   padding-bottom: 120px;
-  min-height: calc(100dvh - 64px);
+  min-height: 100dvh;
 }
 
 .ledger-head {
+  position: relative;
   padding: 22px 24px 20px;
   border-bottom: 1px solid rgba(61, 50, 40, 0.1);
+}
+.ledger-settings {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(61, 50, 40, 0.1);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+}
+.ledger-settings:active {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(0.95);
 }
 .ledger-eyebrow,
 .ledger-sub,
@@ -508,6 +531,15 @@ input {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.plant-type {
+  display: block;
+  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 1px 0 3px;
 }
 .days-label {
   font-size: 0.85rem;

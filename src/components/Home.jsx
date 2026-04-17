@@ -48,7 +48,7 @@ const ACTION = {
   photo:  { icon: '📷', label: 'Photographed',  tone: 'ink' },
 };
 
-export default function Home({ onSelect, onAdd }) {
+export default function Home({ onSelect, onAdd, onSettings }) {
   const plants = useLiveQuery(() => db.plants.toArray());
   const waterings = useLiveQuery(() => db.waterings.toArray());
   const notes = useLiveQuery(() => db.notes.toArray());
@@ -140,6 +140,13 @@ export default function Home({ onSelect, onAdd }) {
   return (
     <div className="ledger">
       <div className="ledger-head">
+        <button
+          className="ledger-settings"
+          onClick={onSettings}
+          aria-label="Settings"
+        >
+          ⚙️
+        </button>
         <div className="ledger-eyebrow">WK {weekNumber} · {monthYear}</div>
         <h1 className="ledger-title">My Plants</h1>
         <div className="ledger-sub">{thirsty.length} thirsty · {plants.length} total</div>
@@ -223,7 +230,9 @@ export default function Home({ onSelect, onAdd }) {
         )}
       </div>
 
-      <button className="fab" onClick={onAdd} aria-label="Add plant">+</button>
+      {tab === 'all' && (
+        <button className="fab" onClick={onAdd} aria-label="Add plant">+</button>
+      )}
     </div>
   );
 }
@@ -418,6 +427,7 @@ function AllPlantsList({ plants, onSelect, onWater }) {
               wateringInterval={p.wateringInterval || 7}
               onWater={() => onWater(p.id)}
               onSelect={() => onSelect(p.id)}
+              showType
             />
           );
         })}

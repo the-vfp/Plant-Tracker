@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-04-17 — Ledger Polish
+- Plant cards in the All plants tab now show the species type in small-caps mono
+- Dropped the redundant sage app-bar on the home screen; settings gear moved to the top-right of the Ledger header
+- Add-plant FAB now only appears on the All plants tab (no longer floats over Thirsty or Care log)
+
 ## 2026-04-17 — Ledger Home Screen
 - New journal-style home screen replaces the flat plant list
 - Header shows week number, month/year, and "X thirsty · Y total"

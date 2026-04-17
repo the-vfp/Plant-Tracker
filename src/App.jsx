@@ -17,27 +17,21 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        {view !== 'home' && (
+      {view !== 'home' && (
+        <header className="app-header">
           <button className="back-btn" onClick={goHome} aria-label="Back">
             &#8592;
           </button>
-        )}
-        <h1 onClick={goHome} style={{ cursor: 'pointer' }}>
-          {view === 'home' && '🌿 My Plants'}
-          {view === 'detail' && '🌱 Plant Care'}
-          {view === 'add' && (editPlantId ? '✏️ Edit Plant' : '🌱 New Plant')}
-          {view === 'settings' && '⚙️ Settings'}
-        </h1>
-        {view === 'home' && (
-          <button className="settings-btn" onClick={openSettings} aria-label="Settings">
-            ⚙️
-          </button>
-        )}
-      </header>
+          <h1 onClick={goHome} style={{ cursor: 'pointer' }}>
+            {view === 'detail' && '🌱 Plant Care'}
+            {view === 'add' && (editPlantId ? '✏️ Edit Plant' : '🌱 New Plant')}
+            {view === 'settings' && '⚙️ Settings'}
+          </h1>
+        </header>
+      )}
 
-      <main className="app-main">
-        {view === 'home' && <Home onSelect={openPlant} onAdd={openAdd} />}
+      <main className={`app-main ${view === 'home' ? 'app-main-home' : ''}`}>
+        {view === 'home' && <Home onSelect={openPlant} onAdd={openAdd} onSettings={openSettings} />}
         {view === 'detail' && <PlantDetail plantId={selectedPlantId} onEdit={openEdit} onBack={goHome} />}
         {view === 'add' && <AddPlant editId={editPlantId} onDone={goHome} />}
         {view === 'settings' && <Settings />}
