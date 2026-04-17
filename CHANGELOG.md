@@ -1,6 +1,16 @@
 # Changelog
 
-## 2026-04-11 — Note Emoji & Editing
+## 2026-04-17 — Ledger Home Screen
+- New journal-style home screen replaces the flat plant list
+- Header shows week number, month/year, and "X thirsty · Y total"
+- "The Week Ahead" strip previews the next 7 days with a moss-green dot for any day that has plants due
+  - Stacked emoji avatars show which plants are scheduled (+N pill when overflowing)
+  - Tap a day to open a drawer with emoji+name pills; tap any pill to jump to that plant
+- Tabbed content: **Thirsty** (default), **Care log**, **All plants**
+  - Thirsty: overdue/today plants with a Water pill that logs a watering inline
+  - Care log: reverse-chronological feed merging waterings, notes, photos, repots, prunes, fertilizing, rotations, moves — infinite scroll (20 at a time)
+  - All plants: existing card grid with sort pills (Date acquired / Name / Type)
+- Fully italic serif headline; minimalist cream + moss + terracotta palette
 - Emoji picker for care notes: quick-select presets for common activities (🧪 fertilizer, 🪴 repotting, ✂️ pruning, 🔄 rotation, 📦 moving)
 - Custom emoji input for any other emoji via keyboard
 - Selected emoji displays in the care log timeline instead of generic 📝
