@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
-import PlantCard from './PlantCard.jsx';
 
 const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -266,29 +265,48 @@ function dueLabel(dueIn) {
   return `In ${dueIn}d`;
 }
 
+function PlantRow({ plant, primarySub, primaryTone, secondarySub, onWater, onSelect }) {
+  return (
+    <div className="plant-row" onClick={() => onSelect(plant.id)}>
+      <div className="plant-row-emoji">{plant.icon || '🌱'}</div>
+      <div className="plant-row-info">
+        <div className="plant-row-name">{plant.name}</div>
+        {primarySub && (
+          <div className={`plant-row-sub ${primaryTone ? `tone-${primaryTone}` : ''}`}>
+            {primarySub}
+          </div>
+        )}
+        {secondarySub && <div className="plant-row-meta">{secondarySub}</div>}
+      </div>
+      <button
+        className="plant-row-water"
+        onClick={(e) => {
+          e.stopPropagation();
+          onWater(plant.id);
+        }}
+        aria-label={`Water ${plant.name}`}
+      >
+        💧
+      </button>
+    </div>
+  );
+}
+
 function ThirstyList({ plants, onWater, onSelect }) {
   if (plants.length === 0) {
     return <div className="ledger-empty">Nothing thirsty. 🌿</div>;
   }
   return (
-    <div className="thirsty-list">
+    <div className="plant-list">
       {plants.map((p) => (
-        <div key={p.id} className="thirsty-row" onClick={() => onSelect(p.id)}>
-          <div className="thirsty-emoji">{p.icon || '🌱'}</div>
-          <div className="thirsty-info">
-            <div className="thirsty-name">{p.name}</div>
-            <div className="thirsty-due">{dueLabel(p.dueIn)}</div>
-          </div>
-          <button
-            className="water-pill"
-            onClick={(e) => {
-              e.stopPropagation();
-              onWater(p.id);
-            }}
-          >
-            Water
-          </button>
-        </div>
+        <PlantRow
+          key={p.id}
+          plant={p}
+          primarySub={dueLabel(p.dueIn)}
+          primaryTone="urgent"
+          onWater={onWater}
+          onSelect={onSelect}
+        />
       ))}
     </div>
   );
@@ -414,20 +432,27 @@ function AllPlantsList({ plants, onSelect, onWater }) {
           </button>
         ))}
       </div>
-      <div className="plant-grid">
+      <div className="plant-list">
         {sorted.map((p) => {
           const days = p.lastWatered
             ? daysFloor(Date.now() - p.lastWatered.getTime())
             : null;
+          const daysText =
+            days === null
+              ? 'Never watered'
+              : days === 0
+                ? 'Watered today'
+                : days === 1
+                  ? '1 day ago'
+                  : `${days} days ago`;
           return (
-            <PlantCard
+            <PlantRow
               key={p.id}
               plant={p}
-              daysSinceWatered={days}
-              wateringInterval={p.wateringInterval || 7}
-              onWater={() => onWater(p.id)}
-              onSelect={() => onSelect(p.id)}
-              showType
+              primarySub={p.type}
+              secondarySub={daysText}
+              onWater={onWater}
+              onSelect={onSelect}
             />
           );
         })}

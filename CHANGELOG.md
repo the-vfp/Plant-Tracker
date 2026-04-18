@@ -4,6 +4,7 @@
 - Plant cards in the All plants tab now show the species type in small-caps mono
 - Dropped the redundant sage app-bar on the home screen; settings gear moved to the top-right of the Ledger header
 - Add-plant FAB now only appears on the All plants tab (no longer floats over Thirsty or Care log)
+- Unified Thirsty and All plants rows into one flat row style (serif name, mono secondary line, 💧 emoji quick-water button); replaces the old card-vs-row inconsistency
 
 ## 2026-04-17 — Ledger Home Screen
 - New journal-style home screen replaces the flat plant list

@@ -341,48 +341,6 @@ input {
   font-size: 14px;
 }
 
-/* Thirsty tab */
-.thirsty-list > * + * {
-  border-top: 1px dashed rgba(61, 50, 40, 0.15);
-}
-.thirsty-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 0;
-  cursor: pointer;
-}
-.thirsty-emoji { font-size: 26px; }
-.thirsty-info { flex: 1; min-width: 0; }
-.thirsty-name {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 18px;
-  color: var(--text);
-}
-.thirsty-due {
-  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
-  font-size: 10px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--terracotta);
-  font-weight: 600;
-  margin-top: 2px;
-}
-.water-pill {
-  background: var(--sage);
-  color: #fff;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
-  font-size: 10px;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  font-weight: 600;
-  transition: background 0.15s, transform 0.15s;
-  flex-shrink: 0;
-}
-.water-pill:active { background: var(--sage-light); transform: scale(0.95); }
-
 /* Care feed */
 .feed-list > * + * {
   border-top: 1px dashed rgba(61, 50, 40, 0.15);
@@ -455,9 +413,6 @@ input {
   height: 1px;
 }
 
-/* All plants tab — restore side padding to the grid inside ledger-content */
-.ledger-content .plant-grid { padding: 8px 0 0; }
-
 .sort-bar {
   display: flex;
   gap: 6px;
@@ -494,71 +449,61 @@ input {
   margin-bottom: 8px;
 }
 
-.plant-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* === PLANT ROW (shared by Thirsty + All plants) === */
+.plant-list > * + .plant-row {
+  border-top: 1px dashed rgba(61, 50, 40, 0.15);
 }
-
-/* === PLANT CARD === */
-.plant-card {
+.plant-row {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px;
-  background: white;
-  border-radius: var(--radius);
-  box-shadow: 0 2px 8px var(--shadow);
+  padding: 14px 0;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  border-left: 4px solid var(--sage-light);
 }
-.plant-card:active { transform: scale(0.98); }
-.plant-card.urgent { border-left-color: var(--terracotta); }
-.plant-card.due-soon { border-left-color: var(--terracotta-light); }
-.plant-card.ok { border-left-color: var(--sage-light); }
-
-.plant-icon { font-size: 2rem; }
-
-.plant-info {
+.plant-row-emoji {
+  font-size: 26px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.plant-row-info {
   flex: 1;
   min-width: 0;
 }
-.plant-info h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.plant-row-name {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 18px;
+  color: var(--text);
 }
-.plant-type {
-  display: block;
+.plant-row-sub {
   font-family: ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.6px;
+  font-size: 10px;
+  letter-spacing: 1px;
   text-transform: uppercase;
+  font-weight: 600;
   color: var(--text-muted);
-  margin: 1px 0 3px;
+  margin-top: 3px;
 }
-.days-label {
-  font-size: 0.85rem;
+.plant-row-sub.tone-urgent {
+  color: var(--terracotta);
+}
+.plant-row-meta {
+  font-size: 13px;
   color: var(--text-muted);
+  margin-top: 2px;
 }
-
-.water-btn {
-  width: 48px;
-  height: 48px;
+.plant-row-water {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--sage-pale);
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s, transform 0.15s;
   flex-shrink: 0;
 }
-.water-btn:active {
+.plant-row-water:active {
   background: var(--sage-light);
   transform: scale(0.9);
 }
