@@ -1,50 +1,60 @@
 # Plant Tracker
 
-A minimalist, offline-first plant care journal. Log waterings, jot notes, snap photos, and see at a glance which of your plants are thirsty.
+> A simple journal-style app for tracking when your houseplants need water, what you've done for them, and how they're doing over time.
 
-Live: [plant-tracker-blue.vercel.app](https://plant-tracker-blue.vercel.app)
+[Try the live app →](https://plant-tracker-blue.vercel.app)
 
-## Features
+<!-- screenshot slot: drop a Home screen capture here once help-center screenshot sweep happens -->
 
-- **Ledger home screen** — journal-style header with the current week, a "thirsty / total" count, and a 7-day strip previewing which plants are due
-- **Three tabs** — *Thirsty* (overdue and due today), *Care log* (reverse-chronological feed of every action), *All plants* (sortable grid)
-- **Per-plant watering cadence** — set how often each plant needs water; urgency borders turn orange at 75% of the interval and red when overdue
-- **Care timeline** — waterings, notes, photos, repots, prunes, fertilizing, rotations, and moves all merged into one feed
-- **Notes with emoji** — quick-pick presets (🧪 🪴 ✂️ 🔄 📦) or any custom emoji; edit text and emoji while preserving the original timestamp
-- **Photos** — capture from camera or upload, compressed to JPEG and stored locally with thumbnails; tap to view full-size
-- **Watering history chart** — collapsible SVG bar chart per plant with 14 / 30 / 90 / 360-day ranges
-- **Backup & restore** — JSON export (with or without photos) and import from Settings
-- **Installable PWA** — works offline, all data stored in IndexedDB on your device
+## What it is
 
-## Tech stack
+Plant Tracker is a small personal app for keeping track of houseplant care. It works in any browser on a phone or laptop, and once you've opened it the first time it keeps working without an internet connection — everything stays saved on your device. There's no sign-up and no account.
 
-- React 19 + Vite
-- Dexie (IndexedDB) for local storage
-- `vite-plugin-pwa` for offline support and installability
-- ESLint with React Hooks and React Refresh plugins
+It was built as a portfolio practice in AI-assisted product work. The product direction, design choices, and writing are mine; the implementation was done end-to-end with Claude Code as a partner.
 
-## Getting started
+The live demo is pre-loaded with sample plants, watering history, photos, and notes adapted from real use, so what you're seeing is the app as it looks once someone has lived in it for a while — not an empty starter screen.
+
+## What's in it
+
+- **A weekly view** that shows which plants are coming up for water in the next seven days
+- **A "thirsty" list** that surfaces plants that are due or overdue, sorted by urgency, with a one-tap watering button
+- **A care log** that brings every watering, note, photo, repot, prune, and other care event into a single timeline you can scroll back through
+- **Per-plant pages** with their own care history, watering cadence chart, photo gallery, and notes
+- **Photos** taken on the device — compressed automatically and stored locally
+- **Backup and restore** — exports everything (with or without photos) as a single file you can save anywhere
+
+The CHANGELOG has the full release history and the small design decisions that shaped each version.
+
+## How it was built
+
+This is a no-code project in the sense that matters: I wrote no application code by hand. Every change to the app — new features, bug fixes, visual revisions — was made by directing Claude Code, an AI coding assistant, in plain English.
+
+What that looked like in practice:
+
+- I wrote a concept document up front and worked through three dashboard design directions before picking one
+- Each change was scoped in conversation, implemented by Claude Code, reviewed in the running app, and refined or reverted from there
+- The CHANGELOG is the artifact of that loop — each entry is roughly one working session
+
+The result is a real, working product (offline storage, photo handling, backup format, the lot) built without writing application code by hand. The point of the project is to demonstrate that an enablement specialist with no traditional development background can ship functional proof-of-concept software using current AI tools.
+
+## Built with
+
+React, Vite, Dexie (IndexedDB), and vite-plugin-pwa. Hosted on Vercel.
+
+## Running it locally
+
+If you want to run a copy on your own machine:
 
 ```bash
 npm install
-npm run dev
+npm run dev      # starts a local development server
+npm run build    # produces a deployable build
 ```
 
-Then open the local URL Vite prints (default `http://localhost:5173`).
+You'll need Node.js installed. Everything else is in `package.json`.
 
-### Scripts
+## A note on the code
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite dev server with HMR |
-| `npm run build` | Build the production bundle |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run ESLint over the project |
+The source is public so it can be reviewed as part of a portfolio, but this is a personal project — it isn't intended to be reused or maintained as open source. All rights reserved.
 
-## Privacy
-
-All plant data, photos, and care logs live in your browser's IndexedDB. Nothing is uploaded to a server. Use **Settings → Export** to make a backup.
-
-## Changelog
-
-See [CHANGELOG.md](./CHANGELOG.md) for release notes.
+See [`CHANGELOG.md`](./CHANGELOG.md) for the full release history.
