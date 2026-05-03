@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-05-02 — Demo Seed
+- Replaced the 17-plant placeholder seed (no events, no photos) with a curated lived-in dataset (19 plants, 47 waterings, 45 notes, 42 photos) so first-time visitors to the demo URL land on a populated app instead of an empty starter screen
+- Seed dates re-anchor on first load — every event shifts so the most recent watering always lands one day before the visitor's "today," keeping the Week Ahead and Thirsty list populated regardless of when the demo is opened
+- Seed data ships as a static asset (`public/demo-data.json`) so the JSON stays out of the JS bundle
+
 ## 2026-04-17 — Ledger Polish
 - Plant cards in the All plants tab now show the species type in small-caps mono
 - Dropped the redundant sage app-bar on the home screen; settings gear moved to the top-right of the Ledger header
