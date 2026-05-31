@@ -26,4 +26,4 @@ dist-ssr
 .vercel
 
 # Claude Code
-.claude/settings.local.json
+.claude/
