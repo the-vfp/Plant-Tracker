@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-05-30 — Graveyard & Help
+- New **Graveyard**: plants can now be laid to rest instead of only permanently deleted. Lay-to-rest keeps the plant's full history (waterings, notes, photos) and is reversible — revive it anytime from its detail page
+- Plant lifecycle status added via a v6 database migration; all existing plants default to alive, no data touched
+- All plants tab gains an **All / Alive / Resting** filter (defaults to Alive, so the everyday view is unchanged); resting plants are dimmed with a 🪦 in place of the quick-water button
+- Resting plants drop out of the Thirsty list, the Week Ahead strip, and the headline count — the count line now reads "X thirsty · Y total · Z resting"
+- Plant detail shows a "Resting since …" banner, hides Water Now, and offers Revive for plants in the graveyard
+- Demo seed lays the two holiday poinsettias (Minun, Clefa) to rest so the Graveyard isn't empty on first visit
+- New **Help** button in the home header linking to the Plant Tracker Help Center (opens in a new tab)
+
 ## 2026-05-02 — Demo Seed
 - Replaced the 17-plant placeholder seed (no events, no photos) with a curated lived-in dataset (19 plants, 47 waterings, 45 notes, 42 photos) so first-time visitors to the demo URL land on a populated app instead of an empty starter screen
 - Seed dates re-anchor on first load — every event shifts so the most recent watering always lands one day before the visitor's "today," keeping the Week Ahead and Thirsty list populated regardless of when the demo is opened

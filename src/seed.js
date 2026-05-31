@@ -7,6 +7,12 @@ import { db } from './db.js';
 const SEED_LATEST_EVENT = '2026-04-21T21:40:20.900Z';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
+// The holiday poinsettias didn't survive to spring — seed them into the
+// Graveyard so the resting state has something to show in the demo. Their
+// "died" date is re-anchored alongside every other seed event.
+const RESTING_NAMES = new Set(['Minun', 'Clefa']);
+const POINSETTIA_DEATH = '2026-02-18T15:00:00.000Z';
+
 const base64ToBlob = (dataUrl) => {
   const [header, data] = dataUrl.split(',');
   const mime = header.match(/:(.*?);/)[1];
@@ -50,7 +56,13 @@ export async function seedIfEmpty() {
     thumbnail: base64ToBlob(p.thumbnail),
   }));
 
-  await db.plants.bulkAdd(data.plants);
+  const plants = data.plants.map((p) =>
+    RESTING_NAMES.has(p.name)
+      ? { ...p, status: 'dead', diedAt: shiftDate(POINSETTIA_DEATH, offsetMs) }
+      : { ...p, status: 'alive' }
+  );
+
+  await db.plants.bulkAdd(plants);
   await db.waterings.bulkAdd(waterings);
   await db.notes.bulkAdd(notes);
   if (photos.length > 0) {

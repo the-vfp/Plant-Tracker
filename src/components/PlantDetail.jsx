@@ -172,6 +172,21 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
     onBack();
   };
 
+  const layToRest = async () => {
+    if (!confirm(`Lay "${plant.name}" to rest in the graveyard? Its history is kept, and you can revive it anytime.`)) return;
+    await db.plants.update(plantId, { status: 'dead', diedAt: new Date().toISOString() });
+    onBack();
+  };
+
+  const revive = async () => {
+    await db.plants.update(plantId, { status: 'alive', diedAt: null });
+  };
+
+  const isResting = plant.status === 'dead';
+  const restingSince = plant.diedAt
+    ? new Date(plant.diedAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -184,15 +199,27 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
         <span className="detail-icon">{plant.icon || '🌱'}</span>
         <h2>{plant.name}</h2>
         {plant.type && <p className="detail-type">{plant.type}</p>}
+        {isResting && (
+          <div className="detail-resting-banner">
+            🪦 Resting{restingSince ? ` since ${restingSince}` : ''}
+          </div>
+        )}
         <div className="detail-actions">
           <button className="btn-secondary" onClick={() => onEdit(plantId)}>Edit</button>
+          {isResting ? (
+            <button className="btn-revive" onClick={revive}>🌱 Revive</button>
+          ) : (
+            <button className="btn-rest" onClick={layToRest}>🪦 Lay to rest</button>
+          )}
           <button className="btn-danger" onClick={deletePlant}>Delete</button>
         </div>
       </div>
 
-      <button className="water-btn-large" onClick={waterPlant}>
-        💧 Water Now
-      </button>
+      {!isResting && (
+        <button className="water-btn-large" onClick={waterPlant}>
+          💧 Water Now
+        </button>
+      )}
 
       <div className="photo-upload">
         <label className={`btn-secondary photo-btn ${uploading ? 'uploading' : ''}`}>

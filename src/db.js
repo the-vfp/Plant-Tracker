@@ -72,3 +72,19 @@ db.version(5).stores({
     }
   });
 });
+
+// v6: introduce a lifecycle status so plants can be "laid to rest" in the
+// Graveyard instead of permanently deleted. Existing plants are all alive.
+// 'dead' plants keep their full history but drop out of watering reminders.
+db.version(6).stores({
+  plants: '++id, name, icon, type, status, createdAt',
+  waterings: '++id, plantId, date',
+  notes: '++id, plantId, text, date',
+  photos: '++id, plantId, date',
+}).upgrade(tx => {
+  return tx.table('plants').toCollection().modify(plant => {
+    if (!plant.status) {
+      plant.status = 'alive';
+    }
+  });
+});

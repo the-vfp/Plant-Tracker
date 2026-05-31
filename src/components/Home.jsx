@@ -5,6 +5,8 @@ import { db } from '../db.js';
 const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+const HELP_URL = 'https://quartz-the-vfp.vercel.app/Help-Center/';
+
 function startOfDay(d) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
@@ -82,12 +84,17 @@ export default function Home({ onSelect, onAdd, onSettings }) {
     return { ...p, dueIn, lastWatered: last };
   });
 
-  const thirsty = plantsWithDue
+  // Resting (dead) plants keep their history but drop out of every
+  // watering view — reminders, the week strip, and the headline counts.
+  const alivePlants = plantsWithDue.filter((p) => p.status !== 'dead');
+  const restingCount = plantsWithDue.length - alivePlants.length;
+
+  const thirsty = alivePlants
     .filter((p) => p.dueIn <= 0)
     .sort((a, b) => a.dueIn - b.dueIn);
 
   const scheduledByDay = Array.from({ length: 7 }, (_, i) =>
-    plantsWithDue.filter((p) => p.dueIn === i)
+    alivePlants.filter((p) => p.dueIn === i)
   );
 
   const waterPlant = async (plantId) => {
@@ -139,6 +146,16 @@ export default function Home({ onSelect, onAdd, onSettings }) {
   return (
     <div className="ledger">
       <div className="ledger-head">
+        <a
+          className="ledger-help"
+          href={HELP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Help Center"
+          title="Help Center"
+        >
+          ?
+        </a>
         <button
           className="ledger-settings"
           onClick={onSettings}
@@ -148,7 +165,10 @@ export default function Home({ onSelect, onAdd, onSettings }) {
         </button>
         <div className="ledger-eyebrow">WK {weekNumber} · {monthYear}</div>
         <h1 className="ledger-title">My Plants</h1>
-        <div className="ledger-sub">{thirsty.length} thirsty · {plants.length} total</div>
+        <div className="ledger-sub">
+          {thirsty.length} thirsty · {alivePlants.length} total
+          {restingCount > 0 && ` · ${restingCount} resting`}
+        </div>
       </div>
 
       <div className="ledger-week">
@@ -265,9 +285,9 @@ function dueLabel(dueIn) {
   return `In ${dueIn}d`;
 }
 
-function PlantRow({ plant, primarySub, primaryTone, secondarySub, onWater, onSelect }) {
+function PlantRow({ plant, primarySub, primaryTone, secondarySub, onWater, onSelect, resting }) {
   return (
-    <div className="plant-row" onClick={() => onSelect(plant.id)}>
+    <div className={`plant-row ${resting ? 'resting' : ''}`} onClick={() => onSelect(plant.id)}>
       <div className="plant-row-emoji">{plant.icon || '🌱'}</div>
       <div className="plant-row-info">
         <div className="plant-row-name">{plant.name}</div>
@@ -278,16 +298,20 @@ function PlantRow({ plant, primarySub, primaryTone, secondarySub, onWater, onSel
         )}
         {secondarySub && <div className="plant-row-meta">{secondarySub}</div>}
       </div>
-      <button
-        className="plant-row-water"
-        onClick={(e) => {
-          e.stopPropagation();
-          onWater(plant.id);
-        }}
-        aria-label={`Water ${plant.name}`}
-      >
-        💧
-      </button>
+      {resting ? (
+        <span className="plant-row-headstone" aria-hidden="true">🪦</span>
+      ) : (
+        <button
+          className="plant-row-water"
+          onClick={(e) => {
+            e.stopPropagation();
+            onWater(plant.id);
+          }}
+          aria-label={`Water ${plant.name}`}
+        >
+          💧
+        </button>
+      )}
     </div>
   );
 }
@@ -392,6 +416,18 @@ const SORT_OPTIONS = [
   ['type', 'Type'],
 ];
 
+const STATUS_FILTERS = [
+  ['all', 'All'],
+  ['alive', 'Alive'],
+  ['resting', 'Resting'],
+];
+
+function restedLabel(diedAt) {
+  if (!diedAt) return 'Resting';
+  const d = new Date(diedAt);
+  return `Resting since ${MONTH_ABBR[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
 function sortPlants(plants, mode) {
   const copy = [...plants];
   if (mode === 'name') {
@@ -409,6 +445,7 @@ function sortPlants(plants, mode) {
 
 function AllPlantsList({ plants, onSelect, onWater }) {
   const [sortMode, setSortMode] = useState('date');
+  const [statusFilter, setStatusFilter] = useState('alive');
 
   if (plants.length === 0) {
     return (
@@ -418,9 +455,29 @@ function AllPlantsList({ plants, onSelect, onWater }) {
       </div>
     );
   }
-  const sorted = sortPlants(plants, sortMode);
+
+  const visible = plants.filter((p) =>
+    statusFilter === 'all'
+      ? true
+      : statusFilter === 'resting'
+        ? p.status === 'dead'
+        : p.status !== 'dead'
+  );
+  const sorted = sortPlants(visible, sortMode);
+
   return (
     <div className="all-plants">
+      <div className="sort-bar status-filter">
+        {STATUS_FILTERS.map(([k, l]) => (
+          <button
+            key={k}
+            className={`sort-btn ${statusFilter === k ? 'active' : ''}`}
+            onClick={() => setStatusFilter(k)}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
       <div className="sort-bar">
         {SORT_OPTIONS.map(([k, l]) => (
           <button
@@ -432,31 +489,52 @@ function AllPlantsList({ plants, onSelect, onWater }) {
           </button>
         ))}
       </div>
-      <div className="plant-list">
-        {sorted.map((p) => {
-          const days = p.lastWatered
-            ? daysFloor(Date.now() - p.lastWatered.getTime())
-            : null;
-          const daysText =
-            days === null
-              ? 'Never watered'
-              : days === 0
-                ? 'Watered today'
-                : days === 1
-                  ? '1 day ago'
-                  : `${days} days ago`;
-          return (
-            <PlantRow
-              key={p.id}
-              plant={p}
-              primarySub={p.type}
-              secondarySub={daysText}
-              onWater={onWater}
-              onSelect={onSelect}
-            />
-          );
-        })}
-      </div>
+      {sorted.length === 0 ? (
+        <div className="ledger-empty">
+          {statusFilter === 'resting'
+            ? 'The graveyard is empty. 🌿'
+            : 'No living plants here.'}
+        </div>
+      ) : (
+        <div className="plant-list">
+          {sorted.map((p) => {
+            const isResting = p.status === 'dead';
+            if (isResting) {
+              return (
+                <PlantRow
+                  key={p.id}
+                  plant={p}
+                  primarySub={p.type}
+                  secondarySub={restedLabel(p.diedAt)}
+                  onSelect={onSelect}
+                  resting
+                />
+              );
+            }
+            const days = p.lastWatered
+              ? daysFloor(Date.now() - p.lastWatered.getTime())
+              : null;
+            const daysText =
+              days === null
+                ? 'Never watered'
+                : days === 0
+                  ? 'Watered today'
+                  : days === 1
+                    ? '1 day ago'
+                    : `${days} days ago`;
+            return (
+              <PlantRow
+                key={p.id}
+                plant={p}
+                primarySub={p.type}
+                secondarySub={daysText}
+                onWater={onWater}
+                onSelect={onSelect}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -138,6 +138,29 @@ input {
   background: rgba(255, 255, 255, 0.9);
   transform: scale(0.95);
 }
+.ledger-help {
+  position: absolute;
+  top: 18px;
+  right: 66px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(61, 50, 40, 0.1);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--sage);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+}
+.ledger-help:active {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(0.95);
+}
 .ledger-eyebrow,
 .ledger-sub,
 .eyebrow {
@@ -508,6 +531,28 @@ input {
   transform: scale(0.9);
 }
 
+/* Resting (graveyard) plants — dimmed, with a headstone in place of water */
+.plant-row.resting .plant-row-emoji {
+  filter: grayscale(0.85);
+  opacity: 0.6;
+}
+.plant-row.resting .plant-row-name {
+  color: var(--text-muted);
+}
+.plant-row-headstone {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+.status-filter {
+  margin-bottom: 2px;
+}
+
 /* === FAB (ADD BUTTON) === */
 .fab {
   position: fixed;
@@ -545,6 +590,21 @@ input {
   display: flex;
   gap: 8px;
   justify-content: center;
+  flex-wrap: wrap;
+}
+.detail-resting-banner {
+  display: inline-block;
+  margin: 0 auto 14px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: var(--warm-white);
+  border: 1px solid rgba(61, 50, 40, 0.12);
+  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--brown);
 }
 
 .water-btn-large {
@@ -755,6 +815,27 @@ input {
   transition: background 0.15s;
 }
 .btn-danger:active { background: var(--danger); color: white; }
+
+.btn-rest {
+  padding: 10px 20px;
+  background: var(--warm-white);
+  color: var(--brown);
+  border: 1px solid rgba(61, 50, 40, 0.15);
+  border-radius: 10px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.btn-rest:active { background: var(--brown-light); color: white; }
+
+.btn-revive {
+  padding: 10px 20px;
+  background: var(--sage-pale);
+  color: var(--sage);
+  border-radius: 10px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.btn-revive:active { background: var(--sage-light); color: white; }
 
 /* === SETTINGS === */
 .settings-section {
