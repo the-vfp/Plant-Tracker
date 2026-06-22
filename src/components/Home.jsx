@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
+import { NOTE_KIND, ACTION } from '../careLog.js';
 
 const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -29,25 +30,6 @@ function getISOWeek(date) {
   }
   return 1 + Math.ceil((firstThursday - d) / 604800000);
 }
-
-const NOTE_KIND = {
-  '🪴': 'repot',
-  '✂️': 'prune',
-  '🧪': 'fert',
-  '🔄': 'rotate',
-  '📦': 'move',
-};
-
-const ACTION = {
-  water:  { icon: '💧', label: 'Watered',       tone: 'sage' },
-  repot:  { icon: '🪴', label: 'Repotted',      tone: 'terra' },
-  prune:  { icon: '✂️', label: 'Pruned',        tone: 'terra' },
-  fert:   { icon: '🧪', label: 'Fertilized',    tone: 'sage' },
-  rotate: { icon: '🔄', label: 'Rotated',       tone: 'ink' },
-  move:   { icon: '📦', label: 'Moved',         tone: 'ink' },
-  note:   { icon: '📝', label: 'Note',          tone: 'ink' },
-  photo:  { icon: '📷', label: 'Photographed',  tone: 'ink' },
-};
 
 export default function Home({ onSelect, onAdd, onSettings }) {
   const plants = useLiveQuery(() => db.plants.toArray());
@@ -87,7 +69,6 @@ export default function Home({ onSelect, onAdd, onSettings }) {
   // Resting (dead) plants keep their history but drop out of every
   // watering view — reminders, the week strip, and the headline counts.
   const alivePlants = plantsWithDue.filter((p) => p.status !== 'dead');
-  const restingCount = plantsWithDue.length - alivePlants.length;
 
   const thirsty = alivePlants
     .filter((p) => p.dueIn <= 0)
@@ -167,7 +148,6 @@ export default function Home({ onSelect, onAdd, onSettings }) {
         <h1 className="ledger-title">My Plants</h1>
         <div className="ledger-sub">
           {thirsty.length} thirsty · {alivePlants.length} total
-          {restingCount > 0 && ` · ${restingCount} resting`}
         </div>
       </div>
 

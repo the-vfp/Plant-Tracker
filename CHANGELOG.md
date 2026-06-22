@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-06-21 — Cozy Plants Reskin
+- Full **"Cozy Plants" kawaii reskin**: soft botanical palette, chunky outlined emoji "pots", plump rounded cards, and a sticker-pop lift on the hero elements — replaces the serif/mono "ledger" look with Fredoka + Nunito type
+- **The Week Ahead** now reads as three clear tiers: empty days stay plain, days with plants to water get a soft desaturated green, and the selected day gets the full green with an outline ring (a selected day with nothing scheduled shows just the ring)
+- The **Add plant** button is now leaf green to match the app's primary-action language; the blush pink is reserved for delight moments (watering confirmation, hearts, Revive)
+- The **Care log** now looks identical on the home tab and on an individual plant's page — both use the same colored-bubble timeline, while the plant page keeps its per-entry edit/delete and photo thumbnails
+- A plant's **icon can now be a custom emoji** in Add/Edit Plant, matching the care-note picker — type any emoji instead of choosing only from the presets
+- Resting plants are no longer included in the home header count — the line now reads "X thirsty · Y total"
+
 ## 2026-05-30 — Graveyard & Help
 - New **Graveyard**: plants can now be laid to rest instead of only permanently deleted. Lay-to-rest keeps the plant's full history (waterings, notes, photos) and is reversible — revive it anytime from its detail page
 - Plant lifecycle status added via a v6 database migration; all existing plants default to alive, no data touched

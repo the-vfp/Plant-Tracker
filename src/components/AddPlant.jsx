@@ -11,6 +11,7 @@ export default function AddPlant({ editId, onDone }) {
   const [name, setName] = useState('');
   const [type, setType] = useState('');
   const [icon, setIcon] = useState('🌱');
+  const [customMode, setCustomMode] = useState(false);
   const [wateringInterval, setWateringInterval] = useState('7');
 
   useEffect(() => {
@@ -19,7 +20,9 @@ export default function AddPlant({ editId, onDone }) {
         if (plant) {
           setName(plant.name);
           setType(plant.type || '');
-          setIcon(plant.icon || '🌱');
+          const loadedIcon = plant.icon || '🌱';
+          setIcon(loadedIcon);
+          setCustomMode(!PLANT_EMOJIS.includes(loadedIcon));
           setWateringInterval(String(plant.wateringInterval || 7));
         }
       });
@@ -29,13 +32,14 @@ export default function AddPlant({ editId, onDone }) {
   const save = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
+    const finalIcon = icon.trim() || '🌱';
 
     if (editId) {
       const interval = Math.max(1, parseInt(wateringInterval) || 7);
-      await db.plants.update(editId, { name: trimmed, type: type.trim(), icon, wateringInterval: interval });
+      await db.plants.update(editId, { name: trimmed, type: type.trim(), icon: finalIcon, wateringInterval: interval });
     } else {
       const interval = Math.max(1, parseInt(wateringInterval) || 7);
-      await db.plants.add({ name: trimmed, type: type.trim(), icon, wateringInterval: interval, createdAt: new Date().toISOString() });
+      await db.plants.add({ name: trimmed, type: type.trim(), icon: finalIcon, wateringInterval: interval, createdAt: new Date().toISOString() });
     }
     onDone();
   };
@@ -86,12 +90,33 @@ export default function AddPlant({ editId, onDone }) {
           {PLANT_EMOJIS.map((emoji) => (
             <button
               key={emoji}
-              className={`emoji-btn ${icon === emoji ? 'selected' : ''}`}
-              onClick={() => setIcon(emoji)}
+              className={`emoji-btn ${icon === emoji && !customMode ? 'selected' : ''}`}
+              onClick={() => { setIcon(emoji); setCustomMode(false); }}
             >
               {emoji}
             </button>
           ))}
+          {customMode ? (
+            <input
+              type="text"
+              className="custom-emoji-input"
+              value={icon}
+              onChange={(e) => setIcon(e.target.value)}
+              placeholder="😀"
+              aria-label="Custom emoji"
+              autoFocus
+            />
+          ) : (
+            <button
+              type="button"
+              className="emoji-btn custom-trigger"
+              onClick={() => { setCustomMode(true); setIcon(''); }}
+              title="Custom emoji"
+              aria-label="Use a custom emoji"
+            >
+              ⌨️
+            </button>
+          )}
         </div>
       </div>
 

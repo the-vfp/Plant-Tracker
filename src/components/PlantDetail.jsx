@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
+import { NOTE_KIND, ACTION } from '../careLog.js';
 import { processPhoto } from '../utils/imageCompression.js';
 import Lightbox from './Lightbox.jsx';
 import WateringChart from './WateringChart.jsx';
@@ -303,50 +304,55 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
         {timeline.length === 0 ? (
           <p className="empty-timeline">No activity yet.</p>
         ) : (
-          timeline.map((entry) => (
-            <div key={entry.id} className={`timeline-entry ${entry.type}`}>
-              <span className="timeline-icon">
-                {entry.type === 'water' ? '💧' : entry.type === 'note' ? (entry.emoji || '📝') : '📷'}
-              </span>
-              <div className="timeline-content">
-                {entry.type === 'photo' ? (
-                  <img
-                    src={entry.thumbnailUrl}
-                    alt="Plant photo"
-                    className="timeline-thumbnail"
-                    onClick={() => openLightbox(entry.photoBlob)}
-                  />
-                ) : (
-                  <span className="timeline-text">
-                    {entry.type === 'water' ? 'Watered' : entry.text}
-                  </span>
-                )}
-                <span className="timeline-date">{formatDate(entry.date)}</span>
-              </div>
-              <div className="timeline-actions">
-                {entry.type === 'note' && (
+          timeline.map((entry) => {
+            const kind = entry.type === 'note' ? (NOTE_KIND[entry.emoji] || 'note') : entry.type;
+            const a = ACTION[kind] || ACTION.note;
+            const glyph = entry.type === 'note' ? (entry.emoji || a.icon) : a.icon;
+            return (
+              <div key={entry.id} className={`feed-row tone-${a.tone}`}>
+                <div className="feed-bubble">{glyph}</div>
+                <div className="feed-body">
+                  <div className="feed-head">
+                    <span className="feed-label">{a.label}</span>
+                  </div>
+                  <div className="feed-when">{formatDate(entry.date)}</div>
+                  {entry.type === 'photo' && (
+                    <img
+                      src={entry.thumbnailUrl}
+                      alt="Plant photo"
+                      className="timeline-thumbnail"
+                      onClick={() => openLightbox(entry.photoBlob)}
+                    />
+                  )}
+                  {entry.type === 'note' && entry.text && (
+                    <div className="feed-note">&ldquo;{entry.text}&rdquo;</div>
+                  )}
+                </div>
+                <div className="timeline-actions">
+                  {entry.type === 'note' && (
+                    <button
+                      className="edit-note-btn"
+                      onClick={() => startEditNote(entry)}
+                      aria-label="Edit note"
+                    >
+                      ✏️
+                    </button>
+                  )}
                   <button
-                    className="edit-note-btn"
-                    onClick={() => startEditNote(entry)}
-                    aria-label="Edit note"
+                    className="delete-note-btn"
+                    onClick={() =>
+                      entry.type === 'water' ? deleteWatering(entry.wateringId) :
+                      entry.type === 'note' ? deleteNote(entry.noteId) :
+                      deletePhoto(entry.photoId)
+                    }
+                    aria-label={`Delete ${entry.type}`}
                   >
-                    ✏️
+                    &times;
                   </button>
-                )}
-                <button
-                  className="delete-note-btn"
-                  onClick={() =>
-                    entry.type === 'water' ? deleteWatering(entry.wateringId) :
-                    entry.type === 'note' ? deleteNote(entry.noteId) :
-                    deletePhoto(entry.photoId)
-                  }
-                  aria-label={`Delete ${entry.type}`}
-                >
-                  &times;
-                </button>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
