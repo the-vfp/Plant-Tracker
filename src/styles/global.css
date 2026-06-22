@@ -96,7 +96,6 @@ input {
 
 .back-btn {
   color: #fff;
-  font-size: 1.2rem;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -104,8 +103,11 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
   transition: background 0.15s, transform 0.15s;
 }
+.back-btn svg { display: block; }
 .back-btn:hover { background: rgba(255, 255, 255, 0.28); }
 .back-btn:active { transform: scale(0.92); }
 
@@ -400,6 +402,233 @@ input {
   font-size: 14px;
 }
 
+/* Tend tab — single-task plants render as a row, multi-task as a grouped card */
+.tend-list { display: flex; flex-direction: column; gap: 14px; }
+.tend-list .plant-row { margin-bottom: 0; }
+.tend-group {
+  background: var(--surface);
+  border: 2px solid var(--card-edge);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 12px 14px;
+}
+.tend-plant {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.tend-plant-emoji { font-size: 22px; }
+.tend-plant-name {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.tend-tasks { display: flex; flex-direction: column; gap: 6px; }
+.tend-task {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: var(--paper);
+}
+.tend-task-icon { font-size: 18px; }
+.tend-task-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tend-task-due {
+  margin-left: auto;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+/* Urgency by task: water overdue is a real problem, fert/rotation are gentle */
+.tend-task.tone-urgent .tend-task-label,
+.tend-task.tone-urgent .tend-task-due { color: var(--terracotta); }
+.tend-task.tone-soft .tend-task-label { color: var(--text-muted); }
+.tend-task.tone-soft .tend-task-due { color: var(--text-faint); }
+.tend-task-do {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--leaf);
+  border: 2px solid var(--ink);
+  box-shadow: var(--pop-sm);
+  color: var(--leaf-ink);
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.tend-task-do:active { transform: scale(0.9); box-shadow: none; }
+
+/* Care schedule block (plant detail) */
+.care-schedule {
+  background: var(--surface);
+  border: 2px solid var(--card-edge);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.care-schedule h3 {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--label);
+  margin-bottom: 10px;
+}
+.sched-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+}
+.sched-icon { font-size: 18px; width: 22px; text-align: center; }
+.sched-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.sched-interval {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.sched-next {
+  margin-left: auto;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sched-row.tone-urgent .sched-next { color: var(--terracotta); }
+.sched-row.tone-soft .sched-next { color: var(--text-muted); }
+
+/* === GROWTH TIMELINE (focused full-screen photo view) === */
+.growth-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.growth-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--cactus);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.growth-headtext { min-width: 0; }
+.growth-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.growth-sub {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-top: 3px;
+}
+.growth-body {
+  flex: 1;
+  padding: 18px 20px 100px;
+}
+.growth-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+.growth-spine {
+  position: relative;
+  width: 22px;
+  flex-shrink: 0;
+}
+.growth-line {
+  position: absolute;
+  left: 10px;
+  top: 8px;
+  bottom: -26px;
+  width: 2px;
+  background: var(--card-edge);
+}
+.growth-dot {
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--leaf);
+  border: 2px solid var(--ink);
+}
+.growth-content { flex: 1; min-width: 0; }
+.growth-stamp {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.growth-rel {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--ink);
+}
+.growth-latest {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--leaf);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.growth-date {
+  margin-left: auto;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--label);
+}
+.growth-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 2px solid var(--card-edge);
+  box-shadow: var(--shadow-card);
+  display: block;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.growth-photo:active { opacity: 0.85; }
+
 /* Care feed (Care log tab) */
 .feed-row {
   display: flex;
@@ -554,6 +783,9 @@ input {
 }
 .plant-row-sub.tone-urgent {
   color: var(--terracotta);
+}
+.plant-row-sub.tone-soft {
+  color: var(--text-muted);
 }
 .plant-row-meta {
   font-size: 13px;
@@ -795,6 +1027,16 @@ input {
   flex-shrink: 0;
   align-items: center;
 }
+.pin-note-btn {
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  border-radius: 8px;
+  opacity: 0.35;
+  filter: grayscale(1);
+  transition: opacity 0.15s, filter 0.15s, background 0.15s;
+}
+.pin-note-btn:hover { background: var(--pot-fill); opacity: 0.7; }
+.pin-note-btn.pinned { opacity: 1; filter: none; }
 .edit-note-btn {
   font-size: 0.85rem;
   padding: 4px 6px;
@@ -802,6 +1044,19 @@ input {
   transition: background 0.15s;
 }
 .edit-note-btn:hover { background: var(--pot-fill); }
+
+/* Pinned notes group — sits above the chronological Care Log */
+.timeline-pinned {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--card-edge);
+}
+.timeline-pinned .feed-row.is-pinned {
+  background: var(--pot-fill);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  margin-bottom: 4px;
+}
 .delete-note-btn {
   color: var(--text-faint);
   font-size: 1.2rem;
@@ -835,6 +1090,38 @@ input {
   box-shadow: var(--shadow-card);
   font-size: 1rem;
   font-weight: 600;
+}
+
+.form-section-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--label);
+  margin-bottom: 10px;
+}
+.schedule-row {
+  display: flex;
+  gap: 10px;
+}
+.schedule-row .form-group {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 8px;
+}
+.schedule-row .form-group label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.schedule-row .form-group input[type="number"] {
+  padding: 12px 10px;
+}
+.form-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-faint);
+  margin-bottom: 20px;
 }
 
 .emoji-picker {
@@ -1063,13 +1350,16 @@ input {
 
 /* === PHOTO UPLOAD === */
 .photo-upload {
+  display: flex;
+  gap: 10px;
   margin-bottom: 16px;
 }
 .photo-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
   padding: 14px;
   font-size: 1rem;
   cursor: pointer;

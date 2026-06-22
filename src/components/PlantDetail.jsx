@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
 import { NOTE_KIND, ACTION } from '../careLog.js';
+import { buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.js';
 import { processPhoto } from '../utils/imageCompression.js';
 import Lightbox from './Lightbox.jsx';
 import WateringChart from './WateringChart.jsx';
@@ -12,9 +13,10 @@ const NOTE_EMOJIS = [
   { emoji: '✂️', label: 'Pruning' },
   { emoji: '🔄', label: 'Rotation' },
   { emoji: '📦', label: 'Moving' },
+  { emoji: '🌱', label: 'Propagation' },
 ];
 
-export default function PlantDetail({ plantId, onEdit, onBack }) {
+export default function PlantDetail({ plantId, onEdit, onBack, onViewGrowth }) {
   const [noteText, setNoteText] = useState('');
   const [noteEmoji, setNoteEmoji] = useState(null);
   const [customEmojiMode, setCustomEmojiMode] = useState(false);
@@ -44,7 +46,7 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
     const urls = [];
     const entries = [
       ...waterings.map((w) => ({ type: 'water', date: w.date, id: `w-${w.id}`, wateringId: w.id })),
-      ...notes.map((n) => ({ type: 'note', date: n.date, text: n.text, emoji: n.emoji || '📝', id: `n-${n.id}`, noteId: n.id })),
+      ...notes.map((n) => ({ type: 'note', date: n.date, text: n.text, emoji: n.emoji || '📝', pinned: !!n.pinned, id: `n-${n.id}`, noteId: n.id })),
       ...photos.map((p) => {
         const thumbnailUrl = URL.createObjectURL(p.thumbnail);
         urls.push(thumbnailUrl);
@@ -138,6 +140,10 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
     await db.notes.delete(noteId);
   };
 
+  const togglePin = async (noteId, pinned) => {
+    await db.notes.update(noteId, { pinned: !pinned });
+  };
+
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -194,6 +200,75 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
       + ' ' + d.toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' });
   };
 
+  // This plant's care calendar — interval + next-due for each tracked task.
+  // Resting plants drop out of reminders, so no schedule for them.
+  const schedule = isResting ? [] : scheduleForPlant(plant, buildLastDone(waterings, notes), Date.now());
+
+  // Pinned notes float into their own group at the top; everything else stays chronological.
+  const pinnedNotes = timeline.filter((e) => e.type === 'note' && e.pinned);
+  const chronological = timeline.filter((e) => !(e.type === 'note' && e.pinned));
+
+  const renderRow = (entry) => {
+    const kind = entry.type === 'note' ? (NOTE_KIND[entry.emoji] || 'note') : entry.type;
+    const a = ACTION[kind] || ACTION.note;
+    const glyph = entry.type === 'note' ? (entry.emoji || a.icon) : a.icon;
+    return (
+      <div key={entry.id} className={`feed-row tone-${a.tone} ${entry.pinned ? 'is-pinned' : ''}`}>
+        <div className="feed-bubble">{glyph}</div>
+        <div className="feed-body">
+          <div className="feed-head">
+            <span className="feed-label">{a.label}</span>
+          </div>
+          <div className="feed-when">{formatDate(entry.date)}</div>
+          {entry.type === 'photo' && (
+            <img
+              src={entry.thumbnailUrl}
+              alt="Plant photo"
+              className="timeline-thumbnail"
+              onClick={() => openLightbox(entry.photoBlob)}
+            />
+          )}
+          {entry.type === 'note' && entry.text && (
+            <div className="feed-note">&ldquo;{entry.text}&rdquo;</div>
+          )}
+        </div>
+        <div className="timeline-actions">
+          {entry.type === 'note' && (
+            <button
+              className={`pin-note-btn ${entry.pinned ? 'pinned' : ''}`}
+              onClick={() => togglePin(entry.noteId, entry.pinned)}
+              aria-label={entry.pinned ? 'Unpin note' : 'Pin note'}
+              aria-pressed={entry.pinned}
+              title={entry.pinned ? 'Unpin note' : 'Pin note'}
+            >
+              📌
+            </button>
+          )}
+          {entry.type === 'note' && (
+            <button
+              className="edit-note-btn"
+              onClick={() => startEditNote(entry)}
+              aria-label="Edit note"
+            >
+              ✏️
+            </button>
+          )}
+          <button
+            className="delete-note-btn"
+            onClick={() =>
+              entry.type === 'water' ? deleteWatering(entry.wateringId) :
+              entry.type === 'note' ? deleteNote(entry.noteId) :
+              deletePhoto(entry.photoId)
+            }
+            aria-label={`Delete ${entry.type}`}
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="plant-detail">
       <div className="detail-header">
@@ -216,6 +291,20 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
         </div>
       </div>
 
+      {schedule.length > 0 && (
+        <div className="care-schedule">
+          <h3>Care schedule</h3>
+          {schedule.map((t) => (
+            <div key={t.key} className={`sched-row tone-${t.tone}`}>
+              <span className="sched-icon">{t.icon}</span>
+              <span className="sched-label">{t.label}</span>
+              <span className="sched-interval">every {t.interval}d</span>
+              <span className="sched-next">{dueLabelShort(t.dueIn)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {!isResting && (
         <button className="water-btn-large" onClick={waterPlant}>
           💧 Water Now
@@ -233,6 +322,11 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
             style={{ display: 'none' }}
           />
         </label>
+        {photos.length >= 2 && (
+          <button className="btn-secondary photo-btn growth-btn" onClick={onViewGrowth}>
+            📸 See growth →
+          </button>
+        )}
       </div>
 
       <WateringChart waterings={waterings} />
@@ -300,59 +394,19 @@ export default function PlantDetail({ plantId, onEdit, onBack }) {
       </div>
 
       <div className="timeline">
+        {pinnedNotes.length > 0 && (
+          <div className="timeline-pinned">
+            <h3>📌 Pinned</h3>
+            {pinnedNotes.map(renderRow)}
+          </div>
+        )}
         <h3>Care Log</h3>
-        {timeline.length === 0 ? (
-          <p className="empty-timeline">No activity yet.</p>
+        {chronological.length === 0 ? (
+          <p className="empty-timeline">
+            {pinnedNotes.length > 0 ? 'No other activity yet.' : 'No activity yet.'}
+          </p>
         ) : (
-          timeline.map((entry) => {
-            const kind = entry.type === 'note' ? (NOTE_KIND[entry.emoji] || 'note') : entry.type;
-            const a = ACTION[kind] || ACTION.note;
-            const glyph = entry.type === 'note' ? (entry.emoji || a.icon) : a.icon;
-            return (
-              <div key={entry.id} className={`feed-row tone-${a.tone}`}>
-                <div className="feed-bubble">{glyph}</div>
-                <div className="feed-body">
-                  <div className="feed-head">
-                    <span className="feed-label">{a.label}</span>
-                  </div>
-                  <div className="feed-when">{formatDate(entry.date)}</div>
-                  {entry.type === 'photo' && (
-                    <img
-                      src={entry.thumbnailUrl}
-                      alt="Plant photo"
-                      className="timeline-thumbnail"
-                      onClick={() => openLightbox(entry.photoBlob)}
-                    />
-                  )}
-                  {entry.type === 'note' && entry.text && (
-                    <div className="feed-note">&ldquo;{entry.text}&rdquo;</div>
-                  )}
-                </div>
-                <div className="timeline-actions">
-                  {entry.type === 'note' && (
-                    <button
-                      className="edit-note-btn"
-                      onClick={() => startEditNote(entry)}
-                      aria-label="Edit note"
-                    >
-                      ✏️
-                    </button>
-                  )}
-                  <button
-                    className="delete-note-btn"
-                    onClick={() =>
-                      entry.type === 'water' ? deleteWatering(entry.wateringId) :
-                      entry.type === 'note' ? deleteNote(entry.noteId) :
-                      deletePhoto(entry.photoId)
-                    }
-                    aria-label={`Delete ${entry.type}`}
-                  >
-                    &times;
-                  </button>
-                </div>
-              </div>
-            );
-          })
+          chronological.map(renderRow)
         )}
       </div>
 

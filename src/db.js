@@ -88,3 +88,33 @@ db.version(6).stores({
     }
   });
 });
+
+// v7: notes can be pinned to a dedicated group at the top of a plant's Care Log.
+// Existing notes default to unpinned.
+db.version(7).stores({
+  plants: '++id, name, icon, type, status, createdAt',
+  waterings: '++id, plantId, date',
+  notes: '++id, plantId, text, date',
+  photos: '++id, plantId, date',
+}).upgrade(tx => {
+  return tx.table('notes').toCollection().modify(note => {
+    if (note.pinned === undefined) {
+      note.pinned = false;
+    }
+  });
+});
+
+// v8: opt-in care schedules beyond watering. fertInterval / rotateInterval are
+// per-plant intervals in days; null means "no schedule" (the task stays out of
+// the Tend tab and shows no chip). Watering keeps its existing interval.
+db.version(8).stores({
+  plants: '++id, name, icon, type, status, createdAt',
+  waterings: '++id, plantId, date',
+  notes: '++id, plantId, text, date',
+  photos: '++id, plantId, date',
+}).upgrade(tx => {
+  return tx.table('plants').toCollection().modify(plant => {
+    if (plant.fertInterval === undefined) plant.fertInterval = null;
+    if (plant.rotateInterval === undefined) plant.rotateInterval = null;
+  });
+});

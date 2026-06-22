@@ -9,6 +9,7 @@ export const NOTE_KIND = {
   '🧪': 'fert',
   '🔄': 'rotate',
   '📦': 'move',
+  '🌱': 'propagate',
 };
 
 // Per-kind display: bubble glyph, uppercase label, and tone (drives bubble/label color).
@@ -19,6 +20,7 @@ export const ACTION = {
   fert:   { icon: '🧪', label: 'Fertilized',    tone: 'sage' },
   rotate: { icon: '🔄', label: 'Rotated',       tone: 'ink' },
   move:   { icon: '📦', label: 'Moved',         tone: 'ink' },
+  propagate: { icon: '🌱', label: 'Propagated', tone: 'sage' },
   note:   { icon: '📝', label: 'Note',          tone: 'ink' },
   photo:  { icon: '📷', label: 'Photographed',  tone: 'ink' },
 };

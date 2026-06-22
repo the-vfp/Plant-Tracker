@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
 import { NOTE_KIND, ACTION } from '../careLog.js';
+import { buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.js';
 
 const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -36,7 +37,7 @@ export default function Home({ onSelect, onAdd, onSettings }) {
   const waterings = useLiveQuery(() => db.waterings.toArray());
   const notes = useLiveQuery(() => db.notes.toArray());
 
-  const [tab, setTab] = useState('thirsty');
+  const [tab, setTab] = useState('tend');
   const [selectedDay, setSelectedDay] = useState(null);
 
   const photos = useLiveQuery(() => db.photos.toArray());
@@ -70,16 +71,38 @@ export default function Home({ onSelect, onAdd, onSettings }) {
   // watering view — reminders, the week strip, and the headline counts.
   const alivePlants = plantsWithDue.filter((p) => p.status !== 'dead');
 
-  const thirsty = alivePlants
-    .filter((p) => p.dueIn <= 0)
-    .sort((a, b) => a.dueIn - b.dueIn);
-
+  // The week strip stays watering-only — water is the daily heartbeat.
   const scheduledByDay = Array.from({ length: 7 }, (_, i) =>
     alivePlants.filter((p) => p.dueIn === i)
   );
 
+  // The Tend tab covers every care task (water + opt-in fert/rotation),
+  // grouped per plant so tasks you do together stay together.
+  const careMaps = buildLastDone(waterings, notes);
+  const tendGroups = alivePlants
+    .map((p) => {
+      const tasks = scheduleForPlant(p, careMaps, Date.now())
+        .filter((t) => t.dueIn <= 0)
+        .sort((a, b) => a.dueIn - b.dueIn);
+      const worst = tasks.reduce((m, t) => Math.min(m, t.dueIn), Infinity);
+      return { plant: p, tasks, worst };
+    })
+    .filter((g) => g.tasks.length > 0)
+    .sort((a, b) => a.worst - b.worst);
+
   const waterPlant = async (plantId) => {
     await db.waterings.add({ plantId, date: new Date().toISOString() });
+  };
+
+  // One-tap "tended": water logs to its table; fert/rotation log a note with
+  // the matching emoji (no text), consistent with the care-log vocabulary.
+  const logTask = async (plantId, taskKey) => {
+    if (taskKey === 'water') {
+      await db.waterings.add({ plantId, date: new Date().toISOString() });
+    } else {
+      const emoji = taskKey === 'fert' ? '🧪' : '🔄';
+      await db.notes.add({ plantId, text: '', emoji, date: new Date().toISOString(), pinned: false });
+    }
   };
 
   const plantById = Object.fromEntries(plants.map((p) => [p.id, p]));
@@ -147,7 +170,7 @@ export default function Home({ onSelect, onAdd, onSettings }) {
         <div className="ledger-eyebrow">WK {weekNumber} · {monthYear}</div>
         <h1 className="ledger-title">My Plants</h1>
         <div className="ledger-sub">
-          {thirsty.length} thirsty · {alivePlants.length} total
+          {tendGroups.length} to tend · {alivePlants.length} total
         </div>
       </div>
 
@@ -203,7 +226,7 @@ export default function Home({ onSelect, onAdd, onSettings }) {
 
       <div className="ledger-tabs">
         {[
-          ['thirsty', 'Thirsty'],
+          ['tend', 'Tend'],
           ['feed', 'Care log'],
           ['all', 'All plants'],
         ].map(([k, l]) => (
@@ -218,8 +241,8 @@ export default function Home({ onSelect, onAdd, onSettings }) {
       </div>
 
       <div className="ledger-content">
-        {tab === 'thirsty' && (
-          <ThirstyList plants={thirsty} onWater={waterPlant} onSelect={onSelect} />
+        {tab === 'tend' && (
+          <TendList groups={tendGroups} onLog={logTask} onSelect={onSelect} />
         )}
         {tab === 'feed' && (
           <CareFeed feed={feed} plantById={plantById} onSelect={onSelect} />
@@ -257,14 +280,6 @@ function OverflowGlyph({ plants }) {
   );
 }
 
-function dueLabel(dueIn) {
-  if (dueIn === Number.NEGATIVE_INFINITY) return 'Never watered';
-  if (dueIn < 0) return `${-dueIn}d overdue`;
-  if (dueIn === 0) return 'Today';
-  if (dueIn === 1) return 'Tomorrow';
-  return `In ${dueIn}d`;
-}
-
 function PlantRow({ plant, primarySub, primaryTone, secondarySub, onWater, onSelect, resting }) {
   return (
     <div className={`plant-row ${resting ? 'resting' : ''}`} onClick={() => onSelect(plant.id)}>
@@ -296,22 +311,61 @@ function PlantRow({ plant, primarySub, primaryTone, secondarySub, onWater, onSel
   );
 }
 
-function ThirstyList({ plants, onWater, onSelect }) {
-  if (plants.length === 0) {
-    return <div className="ledger-empty">Nothing thirsty. 🌿</div>;
+function TendDoButton({ plantId, task, plantName, onLog }) {
+  return (
+    <button
+      className="tend-task-do"
+      onClick={(e) => {
+        e.stopPropagation();
+        onLog(plantId, task.key);
+      }}
+      aria-label={`Mark ${task.label.toLowerCase()} done for ${plantName}`}
+      title={`Mark ${task.label.toLowerCase()} done`}
+    >
+      ✓
+    </button>
+  );
+}
+
+// One due task → a simple row (like the old Thirsty list). Two or more → a card
+// that groups the tasks under the plant, so things you do together stay together.
+function TendList({ groups, onLog, onSelect }) {
+  if (groups.length === 0) {
+    return <div className="ledger-empty">All tended. 🌿</div>;
   }
   return (
-    <div className="plant-list">
-      {plants.map((p) => (
-        <PlantRow
-          key={p.id}
-          plant={p}
-          primarySub={dueLabel(p.dueIn)}
-          primaryTone="urgent"
-          onWater={onWater}
-          onSelect={onSelect}
-        />
-      ))}
+    <div className="tend-list">
+      {groups.map((g) =>
+        g.tasks.length === 1 ? (
+          <div key={g.plant.id} className="plant-row" onClick={() => onSelect(g.plant.id)}>
+            <div className="plant-row-emoji">{g.plant.icon || '🌱'}</div>
+            <div className="plant-row-info">
+              <div className="plant-row-name">{g.plant.name}</div>
+              <div className={`plant-row-sub tone-${g.tasks[0].tone}`}>
+                {g.tasks[0].icon} {g.tasks[0].label} · {dueLabelShort(g.tasks[0].dueIn)}
+              </div>
+            </div>
+            <TendDoButton plantId={g.plant.id} task={g.tasks[0]} plantName={g.plant.name} onLog={onLog} />
+          </div>
+        ) : (
+          <div key={g.plant.id} className="tend-group">
+            <button className="tend-plant" onClick={() => onSelect(g.plant.id)}>
+              <span className="tend-plant-emoji">{g.plant.icon || '🌱'}</span>
+              <span className="tend-plant-name">{g.plant.name}</span>
+            </button>
+            <div className="tend-tasks">
+              {g.tasks.map((t) => (
+                <div key={t.key} className={`tend-task tone-${t.tone}`}>
+                  <span className="tend-task-icon">{t.icon}</span>
+                  <span className="tend-task-label">{t.label}</span>
+                  <span className="tend-task-due">{dueLabelShort(t.dueIn)}</span>
+                  <TendDoButton plantId={g.plant.id} task={t} plantName={g.plant.name} onLog={onLog} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      )}
     </div>
   );
 }

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-21 — Tend, Care Schedules & Growth
+- **Pin notes**: any note on a plant's page can be pinned to a dedicated "📌 Pinned" group at the top of the Care Log, lifted out of the chronological list — unpin and it drops back into its original spot by date. Adds a `pinned` field via a v7 database migration
+- **Care schedules beyond watering**: the **Thirsty** tab is now **Tend** and covers fertilizing and rotation alongside watering, grouped per plant so the tasks you do together stay together
+  - Set an optional **Fertilize every / Rotate every** interval in Add/Edit Plant (leave blank for no reminder); each due task gets a one-tap ✓ that logs it
+  - Water overdue stays urgent (terracotta); fertilize/rotation read in a softer tone — overdue fert isn't an emergency
+  - Fertilize/rotation ride on the existing 🧪/🔄 care notes, so there's no new logging flow. Adds `fertInterval`/`rotateInterval` via a v8 migration (existing plants default to no schedule)
+  - Plants with a single due task show as a simple row; only plants with two or more get a grouped card. The home header now reads "X to tend · Y total"
+- **Care schedule on the plant page**: each plant shows a small calendar of its tracked tasks — interval plus next-due (e.g. `💧 Water · every 4d · today`), so fertilize and rotation timing stays visible even though they're kept out of the Week Ahead strip
+- **Growth photo timeline**: a focused full-screen view (📸 See growth) for plants with two or more photos — every photo oldest→newest down a timeline, each stamped with relative time since you got the plant ("Day 1", "+5 weeks", "+3 months"); tap any photo to enlarge
+- **New propagation note**: 🌱 Propagation added to the care-note presets, shown as "Propagated" in the care log
+- Fixed the **back arrow** rendering off-center on some phones — swapped the Unicode glyph for a centered inline SVG
+- Trimmed the plant-icon presets in Add/Edit Plant from four rows to two
+
 ## 2026-06-21 — Cozy Plants Reskin
 - Full **"Cozy Plants" kawaii reskin**: soft botanical palette, chunky outlined emoji "pots", plump rounded cards, and a sticker-pop lift on the hero elements — replaces the serif/mono "ledger" look with Fredoka + Nunito type
 - **The Week Ahead** now reads as three clear tiers: empty days stay plain, days with plants to water get a soft desaturated green, and the selected day gets the full green with an outline ring (a selected day with nothing scheduled shows just the ring)
