@@ -19,6 +19,23 @@ export default function EmojiFilter({ glyphs, filters, onCycle, onClear }) {
       </button>
       {glyphs.map((g) => {
         const state = filters[g]; // undefined | 'include' | 'exclude'
+        // Mirror cycleFilter's lock: a chip cycles freely only when it's the
+        // only active one; otherwise it just toggles in/out of the bar's mode.
+        const otherEntry = Object.entries(filters).find(([k]) => k !== g);
+        const otherMode = otherEntry ? otherEntry[1] : null;
+        let title;
+        if (!otherMode) {
+          title =
+            state === 'include'
+              ? 'Showing only this — tap to hide it instead'
+              : state === 'exclude'
+                ? 'Hidden — tap to clear'
+                : 'Tap to show only this · tap twice to hide it';
+        } else if (state) {
+          title = 'Tap to remove from filter';
+        } else {
+          title = otherMode === 'include' ? 'Tap to also show this' : 'Tap to also hide this';
+        }
         return (
           <button
             key={g}
@@ -28,18 +45,12 @@ export default function EmojiFilter({ glyphs, filters, onCycle, onClear }) {
             aria-pressed={state === 'include'}
             aria-label={
               state === 'include'
-                ? `Showing only ${g} — tap to exclude`
+                ? `Showing ${g}`
                 : state === 'exclude'
-                  ? `Hiding ${g} — tap to clear`
+                  ? `Hiding ${g}`
                   : `Filter by ${g}`
             }
-            title={
-              state === 'include'
-                ? 'Showing only this — tap to exclude'
-                : state === 'exclude'
-                  ? 'Hidden — tap to clear'
-                  : 'Tap to show only this'
-            }
+            title={title}
           >
             {g}
           </button>
