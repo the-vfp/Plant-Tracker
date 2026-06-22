@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
-import { NOTE_KIND, ACTION } from '../careLog.js';
-import { buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.js';
+import { NOTE_KIND, ACTION, entryGlyph, cycleFilter, passesFilter } from '../careLog.js';
+import { CARE_TASKS, buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.js';
+import EmojiFilter from './EmojiFilter.jsx';
 
 const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -94,13 +95,14 @@ export default function Home({ onSelect, onAdd, onSettings }) {
     await db.waterings.add({ plantId, date: new Date().toISOString() });
   };
 
-  // One-tap "tended": water logs to its table; fert/rotation log a note with
+  // One-tap "tended": water logs to its table; fert/rotation/pest log a note with
   // the matching emoji (no text), consistent with the care-log vocabulary.
   const logTask = async (plantId, taskKey) => {
     if (taskKey === 'water') {
       await db.waterings.add({ plantId, date: new Date().toISOString() });
     } else {
-      const emoji = taskKey === 'fert' ? '🧪' : '🔄';
+      const emoji = CARE_TASKS.find((t) => t.key === taskKey)?.emoji;
+      if (!emoji) return;
       await db.notes.add({ plantId, text: '', emoji, date: new Date().toISOString(), pinned: false });
     }
   };
@@ -385,62 +387,90 @@ function formatFeedDate(dateStr) {
 const FEED_PAGE_SIZE = 20;
 
 function CareFeed({ feed, plantById, onSelect }) {
+  const [filters, setFilters] = useState({});
   const [visible, setVisible] = useState(FEED_PAGE_SIZE);
   const sentinelRef = useRef(null);
 
-  useEffect(() => {
-    setVisible(FEED_PAGE_SIZE);
-  }, [feed.length]);
+  // Distinct glyphs present, newest-first (feed is already sorted), for the chips.
+  const glyphs = useMemo(() => {
+    const seen = [];
+    for (const e of feed) {
+      const g = entryGlyph(e.kind, e.emoji);
+      if (!seen.includes(g)) seen.push(g);
+    }
+    return seen;
+  }, [feed]);
+
+  const shown = useMemo(
+    () => feed.filter((e) => passesFilter(entryGlyph(e.kind, e.emoji), filters)),
+    [feed, filters]
+  );
 
   useEffect(() => {
-    if (!sentinelRef.current || visible >= feed.length) return;
+    setVisible(FEED_PAGE_SIZE);
+  }, [shown.length]);
+
+  useEffect(() => {
+    if (!sentinelRef.current || visible >= shown.length) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setVisible((v) => Math.min(v + FEED_PAGE_SIZE, feed.length));
+          setVisible((v) => Math.min(v + FEED_PAGE_SIZE, shown.length));
         }
       },
       { rootMargin: '200px' }
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [visible, feed.length]);
+  }, [visible, shown.length]);
 
   if (feed.length === 0) {
     return <div className="ledger-empty">No care logged yet.</div>;
   }
 
-  const items = feed.slice(0, visible);
+  const items = shown.slice(0, visible);
   return (
-    <div className="feed-list">
-      {items.map((e) => {
-        const plant = plantById[e.plantId];
-        if (!plant) return null;
-        const a = ACTION[e.kind] || ACTION.note;
-        const bubbleGlyph = e.kind === 'note' && e.emoji ? e.emoji : a.icon;
-        return (
-          <div
-            key={e.id}
-            className={`feed-row tone-${a.tone}`}
-            onClick={() => onSelect(plant.id)}
-          >
-            <div className="feed-bubble">{bubbleGlyph}</div>
-            <div className="feed-body">
-              <div className="feed-head">
-                <span className="feed-label">{a.label}</span>
-                <span className="feed-plant">
-                  <span className="feed-plant-emoji">{plant.icon || '🌱'}</span>
-                  {plant.name}
-                </span>
+    <>
+      <EmojiFilter
+        glyphs={glyphs}
+        filters={filters}
+        onCycle={(g) => setFilters((f) => cycleFilter(f, g))}
+        onClear={() => setFilters({})}
+      />
+      {shown.length === 0 ? (
+        <div className="ledger-empty">No matching entries.</div>
+      ) : (
+        <div className="feed-list">
+          {items.map((e) => {
+            const plant = plantById[e.plantId];
+            if (!plant) return null;
+            const a = ACTION[e.kind] || ACTION.note;
+            const bubbleGlyph = e.kind === 'note' && e.emoji ? e.emoji : a.icon;
+            return (
+              <div
+                key={e.id}
+                className={`feed-row tone-${a.tone}`}
+                onClick={() => onSelect(plant.id)}
+              >
+                <div className="feed-bubble">{bubbleGlyph}</div>
+                <div className="feed-body">
+                  <div className="feed-head">
+                    <span className="feed-label">{a.label}</span>
+                    <span className="feed-plant">
+                      <span className="feed-plant-emoji">{plant.icon || '🌱'}</span>
+                      {plant.name}
+                    </span>
+                  </div>
+                  <div className="feed-when">{formatFeedDate(e.date)}</div>
+                  {e.text && <div className="feed-note">&ldquo;{e.text}&rdquo;</div>}
+                </div>
               </div>
-              <div className="feed-when">{formatFeedDate(e.date)}</div>
-              {e.text && <div className="feed-note">&ldquo;{e.text}&rdquo;</div>}
-            </div>
-          </div>
-        );
-      })}
-      {visible < feed.length && <div ref={sentinelRef} className="feed-sentinel" />}
-    </div>
+            );
+          })}
+          {visible < shown.length && <div ref={sentinelRef} className="feed-sentinel" />}
+        </div>
+      )}
+    </>
   );
 }
 

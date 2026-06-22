@@ -720,6 +720,76 @@ input {
   border-color: var(--ink);
 }
 
+/* Emoji filter — chip bar above a care log; one chip per glyph present */
+.emoji-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 2px 0 14px;
+}
+.emoji-filter-chip {
+  position: relative;
+  min-width: 38px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  font-size: 17px;
+  line-height: 1;
+  background: var(--surface);
+  border: 2px solid var(--card-edge);
+  transition: background 0.15s, border-color 0.15s, filter 0.15s, opacity 0.15s, transform 0.1s;
+}
+.emoji-filter-chip:active {
+  transform: scale(0.94);
+}
+.emoji-filter-chip.is-all {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+/* Include: green ring + ✓ badge. Exclude: terracotta ring, muted glyph + ✕ badge. */
+.emoji-filter-chip.include {
+  background: var(--leaf);
+  border-color: var(--ink);
+}
+.emoji-filter-chip.exclude {
+  background: #F6E2D3;
+  border-color: var(--terracotta);
+  filter: grayscale(0.7);
+  opacity: 0.75;
+}
+.emoji-filter-chip.include::after,
+.emoji-filter-chip.exclude::after {
+  position: absolute;
+  top: -5px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 900;
+  color: #fff;
+  filter: grayscale(0); /* keep the badge crisp even when the chip is muted */
+}
+.emoji-filter-chip.include::after {
+  content: '✓';
+  background: var(--ink);
+}
+.emoji-filter-chip.exclude::after {
+  content: '✕';
+  background: var(--terracotta);
+}
+.emoji-filter-chip.is-all.active {
+  background: var(--leaf);
+  border-color: var(--ink);
+  color: var(--leaf-ink);
+}
+
 .empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -1103,10 +1173,11 @@ input {
 }
 .schedule-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 .schedule-row .form-group {
-  flex: 1;
+  flex: 1 1 calc(50% - 5px);
   min-width: 0;
   margin-bottom: 8px;
 }

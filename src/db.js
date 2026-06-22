@@ -118,3 +118,16 @@ db.version(8).stores({
     if (plant.rotateInterval === undefined) plant.rotateInterval = null;
   });
 });
+
+// v9: pest-control schedule, opt-in like fert/rotate. pestInterval is a per-plant
+// interval in days; null means "no schedule". Logged via 🐛 notes (see careLog.js).
+db.version(9).stores({
+  plants: '++id, name, icon, type, status, createdAt',
+  waterings: '++id, plantId, date',
+  notes: '++id, plantId, text, date',
+  photos: '++id, plantId, date',
+}).upgrade(tx => {
+  return tx.table('plants').toCollection().modify(plant => {
+    if (plant.pestInterval === undefined) plant.pestInterval = null;
+  });
+});

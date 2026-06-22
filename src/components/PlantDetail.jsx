@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
-import { NOTE_KIND, ACTION } from '../careLog.js';
+import { NOTE_KIND, ACTION, entryGlyph, cycleFilter, passesFilter } from '../careLog.js';
 import { buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.js';
 import { processPhoto } from '../utils/imageCompression.js';
 import Lightbox from './Lightbox.jsx';
 import WateringChart from './WateringChart.jsx';
+import EmojiFilter from './EmojiFilter.jsx';
 
 const NOTE_EMOJIS = [
   { emoji: '🧪', label: 'Fertilizer' },
@@ -14,6 +15,7 @@ const NOTE_EMOJIS = [
   { emoji: '🔄', label: 'Rotation' },
   { emoji: '📦', label: 'Moving' },
   { emoji: '🌱', label: 'Propagation' },
+  { emoji: '🐛', label: 'Pest control' },
 ];
 
 export default function PlantDetail({ plantId, onEdit, onBack, onViewGrowth }) {
@@ -24,6 +26,7 @@ export default function PlantDetail({ plantId, onEdit, onBack, onViewGrowth }) {
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState(null);
+  const [logFilters, setLogFilters] = useState({});
 
   const plant = useLiveQuery(() => db.plants.get(plantId), [plantId]);
   const waterings = useLiveQuery(
@@ -207,6 +210,16 @@ export default function PlantDetail({ plantId, onEdit, onBack, onViewGrowth }) {
   // Pinned notes float into their own group at the top; everything else stays chronological.
   const pinnedNotes = timeline.filter((e) => e.type === 'note' && e.pinned);
   const chronological = timeline.filter((e) => !(e.type === 'note' && e.pinned));
+
+  // Emoji filter for the chronological Care Log (pinned notes stay curated/visible).
+  const logGlyphs = [];
+  for (const e of chronological) {
+    const g = entryGlyph(e.type, e.emoji);
+    if (!logGlyphs.includes(g)) logGlyphs.push(g);
+  }
+  const filteredChrono = chronological.filter((e) =>
+    passesFilter(entryGlyph(e.type, e.emoji), logFilters)
+  );
 
   const renderRow = (entry) => {
     const kind = entry.type === 'note' ? (NOTE_KIND[entry.emoji] || 'note') : entry.type;
@@ -401,12 +414,20 @@ export default function PlantDetail({ plantId, onEdit, onBack, onViewGrowth }) {
           </div>
         )}
         <h3>Care Log</h3>
+        <EmojiFilter
+          glyphs={logGlyphs}
+          filters={logFilters}
+          onCycle={(g) => setLogFilters((f) => cycleFilter(f, g))}
+          onClear={() => setLogFilters({})}
+        />
         {chronological.length === 0 ? (
           <p className="empty-timeline">
             {pinnedNotes.length > 0 ? 'No other activity yet.' : 'No activity yet.'}
           </p>
+        ) : filteredChrono.length === 0 ? (
+          <p className="empty-timeline">No matching entries.</p>
         ) : (
-          chronological.map(renderRow)
+          filteredChrono.map(renderRow)
         )}
       </div>
 

@@ -14,6 +14,7 @@ export default function AddPlant({ editId, onDone }) {
   const [wateringInterval, setWateringInterval] = useState('7');
   const [fertInterval, setFertInterval] = useState('');
   const [rotateInterval, setRotateInterval] = useState('');
+  const [pestInterval, setPestInterval] = useState('');
 
   useEffect(() => {
     if (editId) {
@@ -27,6 +28,7 @@ export default function AddPlant({ editId, onDone }) {
           setWateringInterval(String(plant.wateringInterval || 7));
           setFertInterval(plant.fertInterval ? String(plant.fertInterval) : '');
           setRotateInterval(plant.rotateInterval ? String(plant.rotateInterval) : '');
+          setPestInterval(plant.pestInterval ? String(plant.pestInterval) : '');
         }
       });
     }
@@ -50,6 +52,7 @@ export default function AddPlant({ editId, onDone }) {
       wateringInterval: interval,
       fertInterval: parseOptional(fertInterval),
       rotateInterval: parseOptional(rotateInterval),
+      pestInterval: parseOptional(pestInterval),
     };
 
     if (editId) {
@@ -130,8 +133,22 @@ export default function AddPlant({ editId, onDone }) {
             onKeyDown={(e) => e.key === 'Enter' && save()}
           />
         </div>
+
+        <div className="form-group">
+          <label htmlFor="pest-interval">🐛 Pest control (days)</label>
+          <input
+            id="pest-interval"
+            type="number"
+            min="1"
+            max="365"
+            placeholder="Off"
+            value={pestInterval}
+            onChange={(e) => setPestInterval(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && save()}
+          />
+        </div>
       </div>
-      <p className="form-hint">Leave fertilize or rotate blank for no reminder.</p>
+      <p className="form-hint">Leave fertilize, rotate, or pest control blank for no reminder.</p>
 
       <div className="form-group">
         <label>Icon</label>

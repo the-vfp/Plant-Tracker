@@ -1,6 +1,8 @@
 # Changelog
 
-## 2026-06-21 — Tend, Care Schedules & Growth
+## 2026-06-21 — Pest Control & Emoji Filters
+- **Pest control care type**: 🐛 **Pest control** added across the app — a new care-note preset (shown as "Pest control" in the care log) and an optional **Pest control every** interval in Add/Edit Plant (leave blank for no reminder). It rides on the existing care-note vocabulary like fertilize/rotation: 🐛 notes drive the schedule, and each due pest check appears in the **Tend** tab with a one-tap ✓. Overdue reads in the softer tone (not an emergency like water). Adds a `pestInterval` field via a v9 database migration (existing plants default to no schedule). The Week Ahead strip stays watering-only
+- **Filter the care log by emoji** (manga-style tri-state): a chip bar above both the master **Care log** and each plant's timeline, one chip per emoji present. Tap to **include**, tap again to **exclude**, tap a third time to clear — and it's multi-select. Excludes always win; if anything is included, only included entries show; with only excludes set, everything except those shows. The **All** chip clears every filter. The bar hides itself when there's only one kind of entry to filter
 - **Pin notes**: any note on a plant's page can be pinned to a dedicated "📌 Pinned" group at the top of the Care Log, lifted out of the chronological list — unpin and it drops back into its original spot by date. Adds a `pinned` field via a v7 database migration
 - **Care schedules beyond watering**: the **Thirsty** tab is now **Tend** and covers fertilizing and rotation alongside watering, grouped per plant so the tasks you do together stay together
   - Set an optional **Fertilize every / Rotate every** interval in Add/Edit Plant (leave blank for no reminder); each due task gets a one-tap ✓ that logs it

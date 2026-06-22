@@ -2,9 +2,10 @@
 // task (water, fertilize, rotate). Shared by the home Tend tab and the plant
 // detail "Care schedule" block so the due math stays identical across both.
 //
-// Watering keeps its own log table; fertilizing and rotation ride on notes,
-// derived by emoji (🧪 = fertilized, 🔄 = rotated) — the same vocabulary the
-// care log already uses (see careLog.js). No separate logging flow.
+// Watering keeps its own log table; fertilizing, rotation, and pest control ride
+// on notes, derived by emoji (🧪 = fertilized, 🔄 = rotated, 🐛 = pest control) —
+// the same vocabulary the care log already uses (see careLog.js). No separate
+// logging flow.
 
 const DAY = 86400000;
 const daysFloor = (ms) => Math.floor(ms / DAY);
@@ -14,21 +15,26 @@ const daysFloor = (ms) => Math.floor(ms / DAY);
 // plant sets an interval. `tone` drives urgency color: water overdue is a real
 // problem (urgent), fert/rotation overdue just means slower growth (soft).
 export const CARE_TASKS = [
-  { key: 'water',  field: 'wateringInterval', icon: '💧', label: 'Water',     tone: 'urgent', defaultInterval: 7 },
-  { key: 'fert',   field: 'fertInterval',     icon: '🧪', label: 'Fertilize', tone: 'soft', emoji: '🧪' },
-  { key: 'rotate', field: 'rotateInterval',   icon: '🔄', label: 'Rotate',    tone: 'soft', emoji: '🔄' },
+  { key: 'water',  field: 'wateringInterval', icon: '💧', label: 'Water',        tone: 'urgent', defaultInterval: 7 },
+  { key: 'fert',   field: 'fertInterval',     icon: '🧪', label: 'Fertilize',    tone: 'soft', emoji: '🧪' },
+  { key: 'rotate', field: 'rotateInterval',   icon: '🔄', label: 'Rotate',       tone: 'soft', emoji: '🔄' },
+  { key: 'pest',   field: 'pestInterval',     icon: '🐛', label: 'Pest control', tone: 'soft', emoji: '🐛' },
 ];
 
 // Build last-done lookups for every care task from the raw logs.
-// Returns { water: {plantId -> Date}, fert: {...}, rotate: {...} }.
+// Returns { water: {plantId -> Date}, fert: {...}, rotate: {...}, pest: {...} }.
 export function buildLastDone(waterings, notes) {
-  const maps = { water: {}, fert: {}, rotate: {} };
+  const maps = {};
+  for (const t of CARE_TASKS) maps[t.key] = {};
   for (const w of waterings) {
     const d = new Date(w.date);
     if (!maps.water[w.plantId] || d > maps.water[w.plantId]) maps.water[w.plantId] = d;
   }
+  // Note-derived tasks (fert/rotate/pest) are matched by their emoji.
+  const emojiToKey = {};
+  for (const t of CARE_TASKS) if (t.emoji) emojiToKey[t.emoji] = t.key;
   for (const n of notes) {
-    const key = n.emoji === '🧪' ? 'fert' : n.emoji === '🔄' ? 'rotate' : null;
+    const key = emojiToKey[n.emoji];
     if (!key) continue;
     const d = new Date(n.date);
     if (!maps[key][n.plantId] || d > maps[key][n.plantId]) maps[key][n.plantId] = d;
