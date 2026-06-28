@@ -4,11 +4,10 @@ import { db } from '../db.js';
 import { NOTE_KIND, ACTION, entryGlyph, cycleFilter, passesFilter } from '../careLog.js';
 import { CARE_TASKS, buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.js';
 import EmojiFilter from './EmojiFilter.jsx';
+import { HELP_URL } from './HeaderActions.jsx';
 
 const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-const HELP_URL = 'https://quartz-the-vfp.vercel.app/Help-Center/';
 
 function startOfDay(d) {
   const x = new Date(d);

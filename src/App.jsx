@@ -4,6 +4,7 @@ import PlantDetail from './components/PlantDetail.jsx';
 import GrowthTimeline from './components/GrowthTimeline.jsx';
 import AddPlant from './components/AddPlant.jsx';
 import Settings from './components/Settings.jsx';
+import HeaderActions from './components/HeaderActions.jsx';
 
 export default function App() {
   const [view, setView] = useState('home');
@@ -35,11 +36,12 @@ export default function App() {
             {view === 'add' && (editPlantId ? '✏️ Edit Plant' : '🌱 New Plant')}
             {view === 'settings' && '⚙️ Settings'}
           </h1>
+          <HeaderActions onSettings={view !== 'settings' ? openSettings : undefined} />
         </header>
       )}
 
       {view === 'growth' ? (
-        <GrowthTimeline plantId={selectedPlantId} onBack={backToDetail} />
+        <GrowthTimeline plantId={selectedPlantId} onBack={backToDetail} onSettings={openSettings} />
       ) : (
         <main className={`app-main ${view === 'home' ? 'app-main-home' : ''}`}>
           {view === 'home' && <Home onSelect={openPlant} onAdd={openAdd} onSettings={openSettings} />}

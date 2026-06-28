@@ -111,6 +111,36 @@ input {
 .back-btn:hover { background: rgba(255, 255, 255, 0.28); }
 .back-btn:active { transform: scale(0.92); }
 
+/* Shared white-on-cactus action cluster for the cactus headers (app bar +
+   growth view): the ? help link and the ⚙️ settings button. Pushed to the far
+   right so it stays put regardless of the title's width. Home keeps its own
+   cream-bubble pair (.ledger-help / .ledger-settings). */
+.header-actions {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+}
+.header-btn {
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.15s;
+}
+.header-btn-settings { font-size: 1.05rem; }
+.header-btn:hover { background: rgba(255, 255, 255, 0.28); }
+.header-btn:active { transform: scale(0.92); }
+
 .settings-btn {
   font-size: 1.3rem;
   width: 36px;
