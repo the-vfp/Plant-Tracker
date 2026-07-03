@@ -57,23 +57,29 @@ export default function Settings() {
         }
         if (!confirm('This will replace all current data. Continue?')) return;
 
-        await db.plants.clear();
-        await db.waterings.clear();
-        await db.notes.clear();
-        await db.photos.clear();
+        // Decode photos before touching the database, so a corrupt backup
+        // fails here — while the current data is still intact.
+        const restoredPhotos = (data.photos || []).map((p) => ({
+          ...p,
+          blob: base64ToBlob(p.blob),
+          thumbnail: base64ToBlob(p.thumbnail),
+        }));
 
-        await db.plants.bulkAdd(data.plants);
-        await db.waterings.bulkAdd(data.waterings);
-        await db.notes.bulkAdd(data.notes);
+        // Clear + restore inside one transaction: if any bulkAdd throws,
+        // Dexie rolls the whole thing back and the existing data survives.
+        await db.transaction('rw', db.plants, db.waterings, db.notes, db.photos, async () => {
+          await db.plants.clear();
+          await db.waterings.clear();
+          await db.notes.clear();
+          await db.photos.clear();
 
-        if (data.photos && data.photos.length > 0) {
-          const restoredPhotos = data.photos.map((p) => ({
-            ...p,
-            blob: base64ToBlob(p.blob),
-            thumbnail: base64ToBlob(p.thumbnail),
-          }));
-          await db.photos.bulkAdd(restoredPhotos);
-        }
+          await db.plants.bulkAdd(data.plants);
+          await db.waterings.bulkAdd(data.waterings);
+          await db.notes.bulkAdd(data.notes);
+          if (restoredPhotos.length > 0) {
+            await db.photos.bulkAdd(restoredPhotos);
+          }
+        });
 
         alert('Data restored successfully!');
       } catch {

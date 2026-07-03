@@ -1,4 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" fill="#5c7c5a"/>
-  <text x="96" y="124" font-size="100" text-anchor="middle">🌿</text>
+  <rect width="192" height="192"  fill="#79C25B"/>
+  <g transform="translate(19.2 19.2) scale(0.8)">
+  <g fill="none" stroke="#1F3326" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M96 154 C 96 128 96 110 96 90"/>
+    <path d="M96 92 C 97 66 114 50 141 48 C 143 76 124 93 96 92 Z" fill="#FBF3E4"/>
+    <path d="M96 122 C 95 98 79 83 53 81 C 51 108 69 123 96 122 Z" fill="#FBF3E4"/>
+    <path d="M104 84 C 112 72 122 62 132 56" stroke-width="6"/>
+    <path d="M88 114 C 80 103 70 93 61 88" stroke-width="6"/>
+  </g></g>
 </svg>
