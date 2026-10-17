@@ -6,7 +6,7 @@ import { buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.
 import { processPhoto } from '../utils/imageCompression.js';
 import Lightbox from './Lightbox.jsx';
 import WateringChart from './WateringChart.jsx';
-import CareHeatmap from './CareHeatmap.jsx';
+import CareCalendar from './CareCalendar.jsx';
 import { useNow } from '../useNow.js';
 import EmojiFilter from './EmojiFilter.jsx';
 
@@ -346,7 +346,7 @@ export default function PlantDetail({ plantId, onEdit, onBack, onViewGrowth }) {
       </div>
 
       <WateringChart waterings={waterings} />
-      <CareHeatmap waterings={waterings} notes={notes} createdAt={plant.createdAt} now={now} />
+      <CareCalendar waterings={waterings} notes={notes} createdAt={plant.createdAt} now={now} />
 
       <div className="note-input-section">
         <div className="note-emoji-picker">
