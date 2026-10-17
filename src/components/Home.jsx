@@ -5,6 +5,8 @@ import { NOTE_KIND, ACTION, entryGlyph, cycleFilter, passesFilter } from '../car
 import { CARE_TASKS, buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.js';
 import EmojiFilter from './EmojiFilter.jsx';
 import { HELP_URL } from './HeaderActions.jsx';
+import { useNow } from '../useNow.js';
+import { calendarDaysBetween } from '../careStats.js';
 
 const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -41,10 +43,10 @@ export default function Home({ onSelect, onAdd, onSettings }) {
   const [selectedDay, setSelectedDay] = useState(null);
 
   const photos = useLiveQuery(() => db.photos.toArray());
+  const now = useNow();
 
   if (!plants || !waterings || !notes || !photos) return <div className="loading">Loading…</div>;
 
-  const now = new Date();
   const today = startOfDay(now);
 
   const lastWateredByPlant = {};
@@ -61,7 +63,7 @@ export default function Home({ onSelect, onAdd, onSettings }) {
     if (!last) {
       dueIn = Number.NEGATIVE_INFINITY;
     } else {
-      const daysSinceWater = daysFloor(Date.now() - last.getTime());
+      const daysSinceWater = calendarDaysBetween(last, now);
       dueIn = interval - daysSinceWater;
     }
     return { ...p, dueIn, lastWatered: last };
@@ -81,7 +83,7 @@ export default function Home({ onSelect, onAdd, onSettings }) {
   const careMaps = buildLastDone(waterings, notes);
   const tendGroups = alivePlants
     .map((p) => {
-      const tasks = scheduleForPlant(p, careMaps, Date.now())
+      const tasks = scheduleForPlant(p, careMaps, now)
         .filter((t) => t.dueIn <= 0)
         .sort((a, b) => a.dueIn - b.dueIn);
       const worst = tasks.reduce((m, t) => Math.min(m, t.dueIn), Infinity);
@@ -249,7 +251,7 @@ export default function Home({ onSelect, onAdd, onSettings }) {
           <CareFeed feed={feed} plantById={plantById} onSelect={onSelect} />
         )}
         {tab === 'all' && (
-          <AllPlantsList plants={plantsWithDue} onSelect={onSelect} onWater={waterPlant} />
+          <AllPlantsList plants={plantsWithDue} onSelect={onSelect} onWater={waterPlant} now={now} />
         )}
       </div>
 
@@ -405,9 +407,14 @@ function CareFeed({ feed, plantById, onSelect }) {
     [feed, filters]
   );
 
-  useEffect(() => {
+  // Reset paging whenever the filtered list changes size. Adjusting state
+  // during render (React's own recommendation) instead of a setState inside
+  // an effect, which re-rendered the feed twice on every filter tap.
+  const [pagedFor, setPagedFor] = useState(shown.length);
+  if (pagedFor !== shown.length) {
+    setPagedFor(shown.length);
     setVisible(FEED_PAGE_SIZE);
-  }, [shown.length]);
+  }
 
   useEffect(() => {
     if (!sentinelRef.current || visible >= shown.length) return;
@@ -506,7 +513,7 @@ function sortPlants(plants, mode) {
   return copy.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 }
 
-function AllPlantsList({ plants, onSelect, onWater }) {
+function AllPlantsList({ plants, onSelect, onWater, now }) {
   const [sortMode, setSortMode] = useState('date');
   const [statusFilter, setStatusFilter] = useState('alive');
 
@@ -575,7 +582,7 @@ function AllPlantsList({ plants, onSelect, onWater }) {
               );
             }
             const days = p.lastWatered
-              ? daysFloor(Date.now() - p.lastWatered.getTime())
+              ? calendarDaysBetween(p.lastWatered, now)
               : null;
             const daysText =
               days === null
