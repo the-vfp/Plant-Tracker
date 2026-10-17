@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
 import Lightbox from './Lightbox.jsx';
 import HeaderActions from './HeaderActions.jsx';
+import { useNow } from '../useNow.js';
 
 const DAY = 86400000;
 
@@ -39,6 +40,7 @@ function formatDate(dateStr) {
 }
 
 export default function GrowthTimeline({ plantId, onBack, onSettings }) {
+  const now = useNow();
   const [lightboxUrl, setLightboxUrl] = useState(null);
 
   const plant = useLiveQuery(() => db.plants.get(plantId), [plantId]);
@@ -80,7 +82,7 @@ export default function GrowthTimeline({ plantId, onBack, onSettings }) {
         <div className="growth-headtext">
           <div className="growth-title">{plant.icon || '🌱'} {plant.name} · Growth</div>
           <div className="growth-sub">
-            {spanLabel(acq, Date.now())} · {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
+            {spanLabel(acq, now)} · {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
           </div>
         </div>
         <HeaderActions onSettings={onSettings} />

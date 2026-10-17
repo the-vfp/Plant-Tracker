@@ -6,6 +6,8 @@ import { buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.
 import { processPhoto } from '../utils/imageCompression.js';
 import Lightbox from './Lightbox.jsx';
 import WateringChart from './WateringChart.jsx';
+import CareHeatmap from './CareHeatmap.jsx';
+import { useNow } from '../useNow.js';
 import EmojiFilter from './EmojiFilter.jsx';
 
 const NOTE_EMOJIS = [
@@ -27,6 +29,7 @@ export default function PlantDetail({ plantId, onEdit, onBack, onViewGrowth }) {
   const [uploading, setUploading] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const [logFilters, setLogFilters] = useState({});
+  const now = useNow();
 
   const plant = useLiveQuery(() => db.plants.get(plantId), [plantId]);
   const waterings = useLiveQuery(
@@ -205,7 +208,7 @@ export default function PlantDetail({ plantId, onEdit, onBack, onViewGrowth }) {
 
   // This plant's care calendar — interval + next-due for each tracked task.
   // Resting plants drop out of reminders, so no schedule for them.
-  const schedule = isResting ? [] : scheduleForPlant(plant, buildLastDone(waterings, notes), Date.now());
+  const schedule = isResting ? [] : scheduleForPlant(plant, buildLastDone(waterings, notes), now);
 
   // Pinned notes float into their own group at the top; everything else stays chronological.
   const pinnedNotes = timeline.filter((e) => e.type === 'note' && e.pinned);
@@ -343,6 +346,7 @@ export default function PlantDetail({ plantId, onEdit, onBack, onViewGrowth }) {
       </div>
 
       <WateringChart waterings={waterings} />
+      <CareHeatmap waterings={waterings} notes={notes} createdAt={plant.createdAt} now={now} />
 
       <div className="note-input-section">
         <div className="note-emoji-picker">

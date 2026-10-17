@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { db } from '../db.js';
+import { buildContext } from '../contextExport.js';
 
 const blobToBase64 = (blob) => new Promise((resolve) => {
   const reader = new FileReader();
@@ -15,7 +17,17 @@ const base64ToBlob = (dataUrl) => {
   return new Blob([bytes], { type: mime });
 };
 
+const downloadBlob = (blob, filename) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 export default function Settings() {
+  const [shareStatus, setShareStatus] = useState('');
   const exportData = async (includePhotos) => {
     const plants = await db.plants.toArray();
     const waterings = await db.waterings.toArray();
@@ -32,13 +44,38 @@ export default function Settings() {
     }
 
     const data = JSON.stringify({ plants, waterings, notes, photos }, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `plant-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([data], { type: 'application/json' }), `plant-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`);
+  };
+
+  // "Copy for Claude": the same tables as a backup, but written out as a
+  // readable Markdown briefing (see contextExport.js). Photos contribute only
+  // their count and latest date — no image data leaves the device.
+  const buildShareText = async () => {
+    const [plants, waterings, notes, rawPhotos] = await Promise.all([
+      db.plants.toArray(), db.waterings.toArray(), db.notes.toArray(), db.photos.toArray(),
+    ]);
+    const photos = rawPhotos.map(({ id, plantId, date }) => ({ id, plantId, date }));
+    return buildContext({ plants, waterings, notes, photos });
+  };
+
+  const shareFilename = () => `plant-context-${new Date().toISOString().slice(0, 10)}.md`;
+
+  const copyContext = async () => {
+    const text = await buildShareText();
+    const words = text.split(/\s+/).filter(Boolean).length;
+    try {
+      await navigator.clipboard.writeText(text);
+      setShareStatus(`Copied — about ${words.toLocaleString()} words. Paste it into a chat with Claude.`);
+    } catch {
+      downloadBlob(new Blob([text], { type: 'text/markdown' }), shareFilename());
+      setShareStatus('Clipboard was blocked, so it downloaded as a file instead.');
+    }
+  };
+
+  const downloadContext = async () => {
+    const text = await buildShareText();
+    downloadBlob(new Blob([text], { type: 'text/markdown' }), shareFilename());
+    setShareStatus('Downloaded as Markdown.');
   };
 
   const importData = async () => {
@@ -104,6 +141,16 @@ export default function Settings() {
         <div className="settings-buttons" style={{ marginTop: '10px' }}>
           <button className="btn-secondary" onClick={importData}>Import Data</button>
         </div>
+      </div>
+
+      <div className="settings-section">
+        <h3>Share with Claude</h3>
+        <p>A plain-text summary of your collection — schedules, what's overdue, how often each plant really gets watered, recent notes — shaped for pasting into a chat with Claude or any assistant. No photos, and nothing leaves your device until you paste it.</p>
+        <div className="settings-buttons">
+          <button className="btn-primary" onClick={copyContext}>📋 Copy for Claude</button>
+          <button className="btn-secondary" onClick={downloadContext}>Download .md</button>
+        </div>
+        {shareStatus && <p className="settings-status">{shareStatus}</p>}
       </div>
 
       <div className="settings-section danger-zone">

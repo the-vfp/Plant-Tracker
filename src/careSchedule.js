@@ -7,8 +7,7 @@
 // the same vocabulary the care log already uses (see careLog.js). No separate
 // logging flow.
 
-const DAY = 86400000;
-const daysFloor = (ms) => Math.floor(ms / DAY);
+import { calendarDaysBetween } from './careStats.js';
 
 // Per-task config. `field` is the per-plant interval (in days). Water always
 // has a schedule (default 7); fert/rotation are opt-in — untracked until the
@@ -45,6 +44,8 @@ export function buildLastDone(waterings, notes) {
 // Schedule status for one plant's tracked tasks.
 // Returns [{ key, icon, label, tone, emoji, interval, lastDone, dueIn }].
 // dueIn = days until due (negative = overdue, NEGATIVE_INFINITY = never done).
+// Counted in local calendar days, so a plant watered last night at 11pm is
+// "1 day ago" this morning — the count rolls at midnight, not at the tap time.
 // Only tasks with an interval set on the plant are included.
 export function scheduleForPlant(plant, maps, nowMs = Date.now()) {
   const out = [];
@@ -54,7 +55,7 @@ export function scheduleForPlant(plant, maps, nowMs = Date.now()) {
     if (!interval) continue;
     const last = maps[t.key][plant.id] || null;
     const dueIn = last
-      ? interval - daysFloor(nowMs - last.getTime())
+      ? interval - calendarDaysBetween(last, nowMs)
       : Number.NEGATIVE_INFINITY;
     out.push({ key: t.key, icon: t.icon, label: t.label, tone: t.tone, emoji: t.emoji, interval, lastDone: last, dueIn });
   }
