@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-28 — Back Means Back
+- **The phone's back gesture now walks back through the app** instead of closing it. Every step forward (opening a plant, the growth timeline, Settings, Add/Edit Plant, a photo) goes into the browser history, so swiping back closes the photo, then returns to the plant, then home, and only leaves the app once you're on the Tend tab. The on-screen back arrows take the same path, so the arrow and the gesture always agree
+- **Home remembers its tab.** Opening a plant from **All plants** or the **Care log** and coming back lands you on that tab again, not on Tend. Leaving Tend counts as one step, so back from any other tab returns to Tend; hopping between Care log and All plants doesn't pile up steps
+- **Edit Plant returns to the plant** after saving (or backing out) instead of jumping home, and Settings returns to wherever you opened it from. Tapping the title in the app bar still goes straight home
+- The screen state moved out of `useState` in `App.jsx`/`Home.jsx` into a small `useScreenHistory()` hook (`src/useScreenHistory.js`); the lightbox adds its own history step via `pushOverlay()`
+
 ## 2026-10-17 — Watering Calendar, Take Two
 - **The Watering Calendar is now a stack of real month calendars** instead of a GitHub-style heatmap. Ellene's verdict on the heatmap was "confusing", and fair: weeks ran sideways and you had to count squares to know what day you were looking at. Now each month is a proper Monday-first grid with the day numbers in the circles, newest month on top. Green = watered that day, a ring = today, an orange ring = the day you tapped (the caption names it: "Mon, Oct 5 · 💧 watered · ✂️ pruned"), and the small dot in the corner = some other logged care, kept on purpose because it shows the care timeline at a glance. Days before the plant joined the collection stay blank. The **1 mo / 3 mo / 6 mo / 1 yr** buttons now mean how many months are stacked; six and twelve scroll inside the card
 - **No more "watered twice" tier.** A day is watered or it isn't — two taps on the same day were always a slip, not a cadence, and the stats already treated them that way

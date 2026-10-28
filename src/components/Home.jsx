@@ -34,12 +34,11 @@ function getISOWeek(date) {
   return 1 + Math.ceil((firstThursday - d) / 604800000);
 }
 
-export default function Home({ onSelect, onAdd, onSettings }) {
+export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }) {
   const plants = useLiveQuery(() => db.plants.toArray());
   const waterings = useLiveQuery(() => db.waterings.toArray());
   const notes = useLiveQuery(() => db.notes.toArray());
 
-  const [tab, setTab] = useState('tend');
   const [selectedDay, setSelectedDay] = useState(null);
 
   const photos = useLiveQuery(() => db.photos.toArray());
