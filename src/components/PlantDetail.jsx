@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
 import { NOTE_KIND, ACTION, entryGlyph, cycleFilter, passesFilter } from '../careLog.js';
-import { buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.js';
+import { buildLastDone, scheduleForPlant, taskDueLabel } from '../careSchedule.js';
 import { processPhoto } from '../utils/imageCompression.js';
 import Lightbox from './Lightbox.jsx';
 import WateringChart from './WateringChart.jsx';
@@ -311,11 +311,11 @@ export default function PlantDetail({ plantId, onEdit, onBack, onViewGrowth }) {
         <div className="care-schedule">
           <h3>Care schedule</h3>
           {schedule.map((t) => (
-            <div key={t.key} className={`sched-row tone-${t.tone}`}>
+            <div key={t.key} className={`sched-row tone-${t.snooze ? 'snoozed' : t.tone}`}>
               <span className="sched-icon">{t.icon}</span>
               <span className="sched-label">{t.label}</span>
               <span className="sched-interval">every {t.interval}d</span>
-              <span className="sched-next">{dueLabelShort(t.dueIn)}</span>
+              <span className="sched-next">{taskDueLabel(t)}</span>
             </div>
           ))}
         </div>

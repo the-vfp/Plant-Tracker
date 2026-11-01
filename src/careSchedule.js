@@ -41,9 +41,43 @@ export function buildLastDone(waterings, notes) {
   return maps;
 }
 
+// Snoozes ("not dry yet, check back in N days") live on the plant as
+// `snoozes: { water: { until, at } }` — `until` is local midnight of the day it
+// comes back, `at` is when it was snoozed. Doing the task after `at` cancels it,
+// so no logging path has to clear it. `snoozeDays` remembers the last pick per task.
+// Returns { until: Date, days } while the snooze is live, else null.
+export function activeSnooze(plant, key, lastDone, nowMs = Date.now()) {
+  const s = plant.snoozes?.[key];
+  if (!s) return null;
+  if (lastDone && lastDone >= new Date(s.at)) return null;
+  const until = new Date(s.until);
+  const days = calendarDaysBetween(nowMs, until);
+  return days > 0 ? { until, days } : null;
+}
+
+// Local midnight `days` from now — the day a snooze comes back.
+export function snoozeUntil(days, nowMs = Date.now()) {
+  const d = new Date(nowMs);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// "tomorrow", "Tue", or "Nov 12" for anything a week or more out.
+export function snoozeWhen(until, days) {
+  if (days === 1) return 'tomorrow';
+  if (days < 7) return WEEKDAY_SHORT[until.getDay()];
+  return `${MONTH_SHORT[until.getMonth()]} ${until.getDate()}`;
+}
+
 // Schedule status for one plant's tracked tasks.
-// Returns [{ key, icon, label, tone, emoji, interval, lastDone, dueIn }].
+// Returns [{ key, icon, label, tone, emoji, interval, lastDone, dueIn, snooze }].
 // dueIn = days until due (negative = overdue, NEGATIVE_INFINITY = never done).
+// A snoozed task's dueIn is the days until it comes back, so it drops out of
+// Tend and lands on its check-back day everywhere else; `snooze` is set then.
 // Counted in local calendar days, so a plant watered last night at 11pm is
 // "1 day ago" this morning — the count rolls at midnight, not at the tap time.
 // Only tasks with an interval set on the plant are included.
@@ -54,12 +88,20 @@ export function scheduleForPlant(plant, maps, nowMs = Date.now()) {
     const interval = Number.isFinite(raw) && raw > 0 ? raw : t.defaultInterval;
     if (!interval) continue;
     const last = maps[t.key][plant.id] || null;
-    const dueIn = last
-      ? interval - calendarDaysBetween(last, nowMs)
-      : Number.NEGATIVE_INFINITY;
-    out.push({ key: t.key, icon: t.icon, label: t.label, tone: t.tone, emoji: t.emoji, interval, lastDone: last, dueIn });
+    const snooze = activeSnooze(plant, t.key, last, nowMs);
+    const dueIn = snooze
+      ? snooze.days
+      : last
+        ? interval - calendarDaysBetween(last, nowMs)
+        : Number.NEGATIVE_INFINITY;
+    out.push({ key: t.key, icon: t.icon, label: t.label, tone: t.tone, emoji: t.emoji, interval, lastDone: last, dueIn, snooze });
   }
   return out;
+}
+
+// Due label for a task, snooze-aware.
+export function taskDueLabel(t) {
+  return t.snooze ? `💤 back ${snoozeWhen(t.snooze.until, t.snooze.days)}` : dueLabelShort(t.dueIn);
 }
 
 // Short due label for task rows and schedule chips.
