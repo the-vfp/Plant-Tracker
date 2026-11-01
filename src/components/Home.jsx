@@ -9,9 +9,7 @@ import { HELP_URL } from './HeaderActions.jsx';
 import { useNow } from '../useNow.js';
 import { calendarDaysBetween } from '../careStats.js';
 
-const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-const HOLD_HINT_KEY = 'snoozeHoldHintSeen';
-const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function startOfDay(d) {
   const x = new Date(d);
@@ -43,17 +41,6 @@ export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }
 
   const [selectedDay, setSelectedDay] = useState(null);
   const [sheet, setSheet] = useState(null); // { plant, task } while the snooze sheet is open
-  // The hold is invisible, so Tend says so once, until the first time it's used.
-  const [holdHint, setHoldHint] = useState(() => {
-    try { return !localStorage.getItem(HOLD_HINT_KEY); } catch { return false; }
-  });
-  const openSheet = (plant, task) => {
-    setSheet({ plant, task });
-    if (holdHint) {
-      setHoldHint(false);
-      try { localStorage.setItem(HOLD_HINT_KEY, '1'); } catch { /* private mode */ }
-    }
-  };
 
   const photos = useLiveQuery(() => db.photos.toArray());
   const now = useNow();
@@ -286,12 +273,9 @@ export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }
             <TendList
               groups={tendGroups}
               onLog={logTask}
-              onHold={openSheet}
+              onHold={(plant, task) => setSheet({ plant, task })}
               onSelect={onSelect}
             />
-            {holdHint && tendGroups.length > 0 && (
-              <div className="hold-hint">Soil not dry yet? Hold ✓ to check back later.</div>
-            )}
             <SnoozedStrip items={snoozed} onWake={wakeTask} onSelect={onSelect} />
           </>
         )}
