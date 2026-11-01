@@ -29,6 +29,8 @@
   --danger:     #E15A45;  /* delete / danger */
   --water:      #DCEBF5;  /* water-droplet button fill */
   --card-edge:  #EBDDC1;  /* warm hairline border on soft cards */
+  --dusk:       #E6E2F1;  /* snoozed ("checking back") fill */
+  --dusk-ink:   #6E6690;  /* snoozed text */
 
   /* Radii */
   --radius: 18px;
@@ -335,6 +337,14 @@ input {
   font-size: 12px;
   flex-shrink: 0;
 }
+.glyph-emoji { position: relative; }
+.glyph-zz {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  font-size: 9px;
+  line-height: 1;
+}
 .glyph-pill {
   height: 22px;
   padding: 0 7px;
@@ -391,6 +401,8 @@ input {
 .day-pill:active { transform: scale(0.96); }
 .day-pill:hover { background: #dcebc8; }
 .pill-emoji { font-size: 14px; }
+.day-pill.snoozed { background: var(--dusk); }
+.pill-zz { font-size: 11px; margin-left: -2px; }
 .drawer-empty {
   font-size: 13px;
   color: var(--text-muted);
@@ -502,6 +514,162 @@ input {
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .tend-task-do:active { transform: scale(0.9); box-shadow: none; }
+/* held for the snooze sheet — no text selection or iOS callout */
+.tend-task-do { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+
+.hold-hint {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+/* "Checking back" strip under Tend — snoozed tasks, quiet and dashed */
+.snoozed-strip {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border: 2px dashed var(--card-edge);
+  border-radius: var(--radius);
+}
+.snoozed-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dusk-ink);
+  margin-bottom: 4px;
+}
+.snoozed-count { color: var(--text-faint); }
+.snoozed-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.snoozed-emoji { font-size: 18px; opacity: 0.75; }
+.snoozed-name { flex: 1; min-width: 0; font-size: 14px; color: var(--text-muted); }
+.snoozed-task { font-size: 12px; color: var(--text-faint); }
+.snoozed-when {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.snoozed-wake {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 2px solid var(--card-edge);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+.snoozed-wake:active { transform: scale(0.94); }
+
+/* Snooze sheet — bottom sheet from holding a Tend ✓ */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(43, 58, 46, 0.32);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: sheet-fade 160ms ease-out;
+}
+@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+.snooze-sheet {
+  width: 100%;
+  max-width: 520px;
+  background: var(--surface);
+  border-top: 2px solid var(--ink);
+  border-radius: 24px 24px 0 0;
+  padding: 14px 20px calc(20px + env(safe-area-inset-bottom));
+  animation: sheet-up 200ms ease-out;
+}
+@keyframes sheet-up { from { transform: translateY(24px); } to { transform: translateY(0); } }
+.sheet-grab {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--card-edge);
+  margin: 0 auto 14px;
+}
+.sheet-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sheet-hint { font-size: 13px; color: var(--text-muted); margin: 3px 0 16px; }
+.sheet-done,
+.sheet-snooze {
+  width: 100%;
+  padding: 12px;
+  border-radius: 16px;
+  border: 2px solid var(--ink);
+  box-shadow: var(--pop-tab);
+  font-size: 15px;
+  font-weight: 800;
+}
+.sheet-done { background: var(--leaf); color: var(--leaf-ink); margin-bottom: 18px; }
+.sheet-snooze { background: var(--dusk); color: var(--ink); margin-top: 14px; }
+.sheet-done:active,
+.sheet-snooze:active { transform: translateY(2px); box-shadow: none; }
+.sheet-or {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--label);
+  margin-bottom: 10px;
+}
+.snooze-stepper { display: flex; align-items: center; gap: 12px; }
+.snooze-step {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: var(--pop-sm);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.snooze-step:active { transform: scale(0.92); box-shadow: none; }
+.snooze-step:disabled { opacity: 0.35; }
+.snooze-count {
+  flex: 1;
+  text-align: center;
+  padding: 7px 0;
+  border-radius: 16px;
+  background: var(--dusk);
+  border: 2px solid var(--ink);
+  font-size: 15px;
+  color: var(--ink);
+}
+.snooze-num { font-family: 'Fredoka', sans-serif; font-size: 26px; font-weight: 600; vertical-align: -3px; }
+.snooze-count small {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dusk-ink);
+  margin-top: 1px;
+}
 
 /* Care schedule block (plant detail) */
 .care-schedule {
@@ -549,6 +717,7 @@ input {
 }
 .sched-row.tone-urgent .sched-next { color: var(--terracotta); }
 .sched-row.tone-soft .sched-next { color: var(--text-muted); }
+.sched-row.tone-snoozed .sched-next { color: var(--dusk-ink); }
 
 /* === GROWTH TIMELINE (focused full-screen photo view) === */
 .growth-view {

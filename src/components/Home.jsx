@@ -2,13 +2,15 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
 import { NOTE_KIND, ACTION, entryGlyph, cycleFilter, passesFilter } from '../careLog.js';
-import { CARE_TASKS, buildLastDone, scheduleForPlant, dueLabelShort } from '../careSchedule.js';
+import { CARE_TASKS, buildLastDone, scheduleForPlant, dueLabelShort, activeSnooze, snoozeUntil, snoozeWhen } from '../careSchedule.js';
 import EmojiFilter from './EmojiFilter.jsx';
+import SnoozeSheet from './SnoozeSheet.jsx';
 import { HELP_URL } from './HeaderActions.jsx';
 import { useNow } from '../useNow.js';
 import { calendarDaysBetween } from '../careStats.js';
 
 const WEEKDAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const HOLD_HINT_KEY = 'snoozeHoldHintSeen';
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function startOfDay(d) {
@@ -40,6 +42,18 @@ export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }
   const notes = useLiveQuery(() => db.notes.toArray());
 
   const [selectedDay, setSelectedDay] = useState(null);
+  const [sheet, setSheet] = useState(null); // { plant, task } while the snooze sheet is open
+  // The hold is invisible, so Tend says so once, until the first time it's used.
+  const [holdHint, setHoldHint] = useState(() => {
+    try { return !localStorage.getItem(HOLD_HINT_KEY); } catch { return false; }
+  });
+  const openSheet = (plant, task) => {
+    setSheet({ plant, task });
+    if (holdHint) {
+      setHoldHint(false);
+      try { localStorage.setItem(HOLD_HINT_KEY, '1'); } catch { /* private mode */ }
+    }
+  };
 
   const photos = useLiveQuery(() => db.photos.toArray());
   const now = useNow();
@@ -58,14 +72,18 @@ export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }
   const plantsWithDue = plants.map((p) => {
     const last = lastWateredByPlant[p.id];
     const interval = p.wateringInterval || 7;
+    // A snoozed plant sits on its check-back day instead of its due day.
+    const snooze = activeSnooze(p, 'water', last, now);
     let dueIn;
-    if (!last) {
+    if (snooze) {
+      dueIn = snooze.days;
+    } else if (!last) {
       dueIn = Number.NEGATIVE_INFINITY;
     } else {
       const daysSinceWater = calendarDaysBetween(last, now);
       dueIn = interval - daysSinceWater;
     }
-    return { ...p, dueIn, lastWatered: last };
+    return { ...p, dueIn, lastWatered: last, snooze };
   });
 
   // Resting (dead) plants keep their history but drop out of every
@@ -73,23 +91,27 @@ export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }
   const alivePlants = plantsWithDue.filter((p) => p.status !== 'dead');
 
   // The week strip stays watering-only — water is the daily heartbeat.
+  // Check-backs sort first so a crowded day still shows its 💤.
   const scheduledByDay = Array.from({ length: 7 }, (_, i) =>
-    alivePlants.filter((p) => p.dueIn === i)
+    alivePlants.filter((p) => p.dueIn === i).sort((a, b) => !!b.snooze - !!a.snooze)
   );
 
   // The Tend tab covers every care task (water + opt-in fert/rotation),
   // grouped per plant so tasks you do together stay together.
   const careMaps = buildLastDone(waterings, notes);
-  const tendGroups = alivePlants
-    .map((p) => {
-      const tasks = scheduleForPlant(p, careMaps, now)
-        .filter((t) => t.dueIn <= 0)
-        .sort((a, b) => a.dueIn - b.dueIn);
-      const worst = tasks.reduce((m, t) => Math.min(m, t.dueIn), Infinity);
-      return { plant: p, tasks, worst };
-    })
-    .filter((g) => g.tasks.length > 0)
-    .sort((a, b) => a.worst - b.worst);
+  const tendGroups = [];
+  const snoozed = []; // the "Checking back" strip under Tend, soonest first
+  for (const p of alivePlants) {
+    const schedule = scheduleForPlant(p, careMaps, now);
+    const tasks = schedule
+      .filter((t) => t.dueIn <= 0)
+      .sort((a, b) => a.dueIn - b.dueIn);
+    const worst = tasks.reduce((m, t) => Math.min(m, t.dueIn), Infinity);
+    if (tasks.length > 0) tendGroups.push({ plant: p, tasks, worst });
+    for (const t of schedule) if (t.snooze) snoozed.push({ plant: p, task: t });
+  }
+  tendGroups.sort((a, b) => a.worst - b.worst);
+  snoozed.sort((a, b) => a.task.dueIn - b.task.dueIn);
 
   const waterPlant = async (plantId) => {
     await db.waterings.add({ plantId, date: new Date().toISOString() });
@@ -105,6 +127,21 @@ export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }
       if (!emoji) return;
       await db.notes.add({ plantId, text: '', emoji, date: new Date().toISOString(), pinned: false });
     }
+  };
+
+  // Snoozing isn't care, so nothing is logged — it only moves the task's next
+  // day. The pick is remembered per plant and task for next time.
+  const snoozeTask = async (plant, taskKey, days) => {
+    await db.plants.update(plant.id, {
+      snoozes: { ...plant.snoozes, [taskKey]: { until: snoozeUntil(days).toISOString(), at: new Date().toISOString() } },
+      snoozeDays: { ...plant.snoozeDays, [taskKey]: days },
+    });
+  };
+
+  const wakeTask = async (plant, taskKey) => {
+    const rest = { ...plant.snoozes };
+    delete rest[taskKey];
+    await db.plants.update(plant.id, { snoozes: rest });
   };
 
   const plantById = Object.fromEntries(plants.map((p) => [p.id, p]));
@@ -204,7 +241,7 @@ export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }
         {selectedDay !== null && (
           <div className="week-drawer">
             <div className="drawer-head">
-              {weekDays[selectedDay].weekday} · {scheduledByDay[selectedDay].length} to water
+              {weekDays[selectedDay].weekday} · {drawerCount(scheduledByDay[selectedDay])}
             </div>
             <div className="drawer-pills">
               {scheduledByDay[selectedDay].length === 0 ? (
@@ -213,11 +250,12 @@ export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }
                 scheduledByDay[selectedDay].map((p) => (
                   <button
                     key={p.id}
-                    className="day-pill"
+                    className={`day-pill ${p.snooze ? 'snoozed' : ''}`}
                     onClick={() => onSelect(p.id)}
                   >
                     <span className="pill-emoji">{p.icon || '🌱'}</span>
                     {p.name}
+                    {p.snooze && <span className="pill-zz" aria-label="checking back">💤</span>}
                   </button>
                 ))
               )}
@@ -244,7 +282,18 @@ export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }
 
       <div className="ledger-content">
         {tab === 'tend' && (
-          <TendList groups={tendGroups} onLog={logTask} onSelect={onSelect} />
+          <>
+            <TendList
+              groups={tendGroups}
+              onLog={logTask}
+              onHold={openSheet}
+              onSelect={onSelect}
+            />
+            {holdHint && tendGroups.length > 0 && (
+              <div className="hold-hint">Soil not dry yet? Hold ✓ to check back later.</div>
+            )}
+            <SnoozedStrip items={snoozed} onWake={wakeTask} onSelect={onSelect} />
+          </>
         )}
         {tab === 'feed' && (
           <CareFeed feed={feed} plantById={plantById} onSelect={onSelect} />
@@ -257,6 +306,59 @@ export default function Home({ tab, onTab: setTab, onSelect, onAdd, onSettings }
       {tab === 'all' && (
         <button className="fab" onClick={onAdd} aria-label="Add plant">+</button>
       )}
+
+      {sheet && (
+        <SnoozeSheet
+          plant={sheet.plant}
+          task={sheet.task}
+          now={now}
+          onDone={() => logTask(sheet.plant.id, sheet.task.key)}
+          onSnooze={(days) => snoozeTask(sheet.plant, sheet.task.key, days)}
+          onClose={() => setSheet(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// "2 to water", "1 to check", or both — snoozed plants are check-backs.
+function drawerCount(dayPlants) {
+  const check = dayPlants.filter((p) => p.snooze).length;
+  const water = dayPlants.length - check;
+  const parts = [];
+  if (water || !check) parts.push(`${water} to water`);
+  if (check) parts.push(`${check} to check`);
+  return parts.join(' · ');
+}
+
+function SnoozedStrip({ items, onWake, onSelect }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="snoozed-strip">
+      <div className="snoozed-head">
+        <span>💤 Checking back</span>
+        <span className="snoozed-count">{items.length}</span>
+      </div>
+      {items.map(({ plant, task }) => (
+        <div key={`${plant.id}-${task.key}`} className="snoozed-row" onClick={() => onSelect(plant.id)}>
+          <span className="snoozed-emoji">{plant.icon || '🌱'}</span>
+          <span className="snoozed-name">
+            {plant.name}
+            {task.key !== 'water' && <span className="snoozed-task"> · {task.icon} {task.label.toLowerCase()}</span>}
+          </span>
+          <span className="snoozed-when">{snoozeWhen(task.snooze.until, task.snooze.days)}</span>
+          <button
+            className="snoozed-wake"
+            onClick={(e) => {
+              e.stopPropagation();
+              onWake(plant, task.key);
+            }}
+            aria-label={`Bring ${plant.name} back to Tend now`}
+          >
+            wake
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
@@ -275,6 +377,7 @@ function OverflowGlyph({ plants }) {
           style={{ marginLeft: i === 0 ? 0 : -6 }}
         >
           {p.icon || '🌱'}
+          {p.snooze && <span className="glyph-zz" aria-hidden="true">💤</span>}
         </span>
       ))}
       {extra > 0 && <span className="glyph-pill">+{extra}</span>}
@@ -313,16 +416,57 @@ function PlantRow({ plant, primarySub, primaryTone, secondarySub, onWater, onSel
   );
 }
 
-function TendDoButton({ plantId, task, plantName, onLog }) {
+const HOLD_MS = 450;
+
+// Tap logs the task; hold (or right-click) opens the snooze sheet instead.
+// Android fires contextmenu on a long-press and iOS doesn't, so both the timer
+// and the contextmenu event open it, and whichever comes first swallows the tap.
+function TendDoButton({ plant, task, onLog, onHold }) {
+  const timer = useRef(null);
+  const held = useRef(false);
+  const start = useRef(null);
+
+  const cancel = () => {
+    clearTimeout(timer.current);
+    timer.current = null;
+  };
+  const hold = () => {
+    cancel();
+    if (held.current) return;
+    held.current = true;
+    navigator.vibrate?.(15);
+    onHold(plant, task);
+  };
+
   return (
     <button
       className="tend-task-do"
+      onPointerDown={(e) => {
+        held.current = false;
+        start.current = { x: e.clientX, y: e.clientY };
+        timer.current = setTimeout(hold, HOLD_MS);
+      }}
+      onPointerMove={(e) => {
+        // a scroll that started on the button isn't a hold
+        if (start.current && Math.hypot(e.clientX - start.current.x, e.clientY - start.current.y) > 10) cancel();
+      }}
+      onPointerUp={cancel}
+      onPointerCancel={cancel}
+      onPointerLeave={cancel}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        hold();
+      }}
       onClick={(e) => {
         e.stopPropagation();
-        onLog(plantId, task.key);
+        if (held.current) {
+          held.current = false;
+          return;
+        }
+        onLog(plant.id, task.key);
       }}
-      aria-label={`Mark ${task.label.toLowerCase()} done for ${plantName}`}
-      title={`Mark ${task.label.toLowerCase()} done`}
+      aria-label={`Mark ${task.label.toLowerCase()} done for ${plant.name} (hold to check back later)`}
+      title={`Mark ${task.label.toLowerCase()} done · hold to check back later`}
     >
       ✓
     </button>
@@ -331,7 +475,7 @@ function TendDoButton({ plantId, task, plantName, onLog }) {
 
 // One due task → a simple row (like the old Thirsty list). Two or more → a card
 // that groups the tasks under the plant, so things you do together stay together.
-function TendList({ groups, onLog, onSelect }) {
+function TendList({ groups, onLog, onHold, onSelect }) {
   if (groups.length === 0) {
     return <div className="ledger-empty">All tended. 🌿</div>;
   }
@@ -347,7 +491,7 @@ function TendList({ groups, onLog, onSelect }) {
                 {g.tasks[0].icon} {g.tasks[0].label} · {dueLabelShort(g.tasks[0].dueIn)}
               </div>
             </div>
-            <TendDoButton plantId={g.plant.id} task={g.tasks[0]} plantName={g.plant.name} onLog={onLog} />
+            <TendDoButton plant={g.plant} task={g.tasks[0]} onLog={onLog} onHold={onHold} />
           </div>
         ) : (
           <div key={g.plant.id} className="tend-group">
@@ -361,7 +505,7 @@ function TendList({ groups, onLog, onSelect }) {
                   <span className="tend-task-icon">{t.icon}</span>
                   <span className="tend-task-label">{t.label}</span>
                   <span className="tend-task-due">{dueLabelShort(t.dueIn)}</span>
-                  <TendDoButton plantId={g.plant.id} task={t} plantName={g.plant.name} onLog={onLog} />
+                  <TendDoButton plant={g.plant} task={t} onLog={onLog} onHold={onHold} />
                 </div>
               ))}
             </div>
@@ -591,12 +735,13 @@ function AllPlantsList({ plants, onSelect, onWater, now }) {
                   : days === 1
                     ? '1 day ago'
                     : `${days} days ago`;
+            const snoozeText = p.snooze ? ` · 💤 back ${snoozeWhen(p.snooze.until, p.snooze.days)}` : '';
             return (
               <PlantRow
                 key={p.id}
                 plant={p}
                 primarySub={p.type}
-                secondarySub={daysText}
+                secondarySub={daysText + snoozeText}
                 onWater={onWater}
                 onSelect={onSelect}
               />

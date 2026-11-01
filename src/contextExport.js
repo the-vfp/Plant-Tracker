@@ -66,7 +66,8 @@ function plantBlock(p, { maps, waterings, notes, photos, now }) {
 
     const sched = scheduleForPlant(p, maps, now).map((t) => {
       const last = t.lastDone ? `last ${fmtShort(t.lastDone)} (${ago(t.lastDone, now)})` : 'never logged';
-      return `${t.icon} ${t.label.toLowerCase()} every ${t.interval}d — ${last}, ${dueText(t.dueIn)}`;
+      const next = t.snooze ? `soil checked, not ready — checking back ${fmtShort(t.snooze.until)}` : dueText(t.dueIn);
+      return `${t.icon} ${t.label.toLowerCase()} every ${t.interval}d — ${last}, ${next}`;
     });
     if (sched.length) lines.push(`- Schedule: ${sched.join('; ')}`);
 
