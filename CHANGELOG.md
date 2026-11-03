@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-11-03 — Calendar Tucked Away
+- **The Watering Calendar now starts closed** on the plant page. Tap its header to open it
+
 ## 2026-10-31 — Check Back Later
 - **Snooze a care task when the plant isn't ready.** Soil not dry yet? **Hold the ✓** on a Tend row instead of tapping it. A sheet slides up with **💧 Watered it** (in case you did after all) and a **− / +** stepper for how many days until you check back, with the day it lands on underneath ("3 days · Tuesday, Nov 3"). Any number of days, no presets; it opens on whatever you picked last time for that plant and task, so Serena opens on 1 and Draco on 3. A quick tap on ✓ still logs it like before
 - **Snoozed plants act like any other scheduled day.** They leave Tend and show up in a quiet dashed **💤 Checking back** strip underneath ("Draco · Tue", with a **wake** button to bring one back now). They also sit on their check-back day in the week strip with a little 💤 (the drawer reads "Tue · 2 to water · 1 to check"), on the plant page ("💤 back Tue"), and in All plants ("11 days ago · 💤 back Tue")
