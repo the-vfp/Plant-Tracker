@@ -26,7 +26,7 @@ function formatDay(d) {
 }
 
 export default function CareCalendar({ waterings, notes, createdAt, now }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [winIdx, setWinIdx] = useState(1);
   const [selected, setSelected] = useState(null);
   const win = WINDOWS[winIdx];
